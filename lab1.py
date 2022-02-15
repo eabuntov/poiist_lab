@@ -4,6 +4,8 @@ import vlc
 
 
 def play_sound(name):
+    if name == '0':
+        return
     sound = vlc.MediaPlayer('sounds/' + name + '.mp3')
     sound.play()
     time.sleep(0.8)
@@ -11,7 +13,7 @@ def play_sound(name):
     sound.release()
 
 
-def pronounce(digit, order, next_digit, carry_flag):
+def pronounce(digit, order, next_digit, carry_flag, thouthands):
     two_digits = carry_flag
     if order == 6:
         if not two_digits:
@@ -33,7 +35,7 @@ def pronounce(digit, order, next_digit, carry_flag):
             play_sound('1000')
         elif 2 <= digit <= 4 and not two_digits:
             play_sound('1000s')
-        else:
+        elif thouthands:
             play_sound('1000s1')
             two_digits = False
     elif order == 8 or order == 5 or order == 2:
@@ -61,14 +63,15 @@ if __name__ == '__main__':
         order = len(sys.argv[1])
         if 0 < num < 1000000000:
             print("Pronouncing {}".format(num))
+            thousands = (num - (num // 1000000) * 1000000) // 1000 > 0 #there are some thousands
             two_digits = False
-            for n in range(order, -1, -1):
+            for n in range(order-1, -1, -1):
                 digit = num // (10 ** n)
                 num -= digit * 10 ** n
-                if digit > 0:
-                    print(digit)
-                    two_digits = pronounce(digit, n, num // 10 ** (n-1), two_digits)
-                    #time.sleep(0.5)
+                #if digit > 0:
+                print(digit)
+                two_digits = pronounce(digit, n, num // 10 ** (n-1), two_digits, thousands)
+                #time.sleep(0.5)
         else:
             print("Number out of range!")
     else:
