@@ -2,6 +2,7 @@ import time
 import sys
 import vlc
 
+
 def play_sound(name):
     sound = vlc.MediaPlayer('sounds/' + name + '.mp3')
     sound.play()
@@ -9,16 +10,21 @@ def play_sound(name):
     sound.stop()
     sound.release()
 
+
 def pronounce(digit, order):
-    play_sound(str(digit))
+
     if order == 6:
+        play_sound(str(digit))
         play_sound('mlns')
     elif order == 3:
+        play_sound(str(digit))
         play_sound('1000s')
+    elif order == 8 or order == 5 or order == 2:
+        play_sound(str(digit * 100))
+    elif order == 7 or order == 4 or order == 1:
+        play_sound(str(digit*10))
 
 
-
-# Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         print("Too few arguments!")
