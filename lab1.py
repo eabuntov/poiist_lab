@@ -28,10 +28,11 @@ def pronounce(digit, order, next_digit, carry_flag, thouthands):
             play_sound('mlns')
             two_digits = False
     elif order == 3:
-        if not two_digits:
+        if not two_digits and digit > 1:
             play_sound(str(digit))
             two_digits = False
         if digit == 1 and not two_digits:
+            play_sound('odna')
             play_sound('1000')
         elif 2 <= digit <= 4 and not two_digits:
             play_sound('1000s')
