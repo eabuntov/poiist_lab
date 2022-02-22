@@ -13,7 +13,7 @@ def play_sound(name):
     sound.release()
 
 
-def pronounce(digit, order, next_digit, carry_flag, thouthands):
+def pronounce(digit, order, next_digit, carry_flag, thousands):
     two_digits = carry_flag
     if order == 6:
         if not two_digits:
@@ -27,6 +27,7 @@ def pronounce(digit, order, next_digit, carry_flag, thouthands):
         else:
             play_sound('mlns')
             two_digits = False
+
     elif order == 3:
         if not two_digits and digit > 1:
             play_sound(str(digit))
@@ -36,12 +37,14 @@ def pronounce(digit, order, next_digit, carry_flag, thouthands):
             play_sound('1000')
         elif 2 <= digit <= 4 and not two_digits:
             play_sound('1000s')
-        elif thouthands:
+        elif thousands:
             play_sound('1000s1')
             two_digits = False
+
     elif order == 8 or order == 5 or order == 2:
         play_sound(str(digit * 100))
         two_digits = False
+
     elif order == 7 or order == 4 or order == 1:
         if digit == 1:
             two_digits = True
@@ -49,6 +52,7 @@ def pronounce(digit, order, next_digit, carry_flag, thouthands):
         else:
             play_sound(str(digit * 10))
             two_digits = False
+
     else:
         if not two_digits:
             play_sound(str(digit))
