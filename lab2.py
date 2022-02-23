@@ -1,26 +1,18 @@
 #Разметка SSML стихотворения
 
 #espeak, espeak-ng, google, amazon, ms, ...
-
+import subprocess
 import win32com.client
+
 speaker = win32com.client.Dispatch("SAPI.SpVoice")
-speaker.Speak('''<speak>
-Игорь Северянин.
-УВЕРТЮРА. 
-Ананасы в шампанском <break time='5s'/> Ананасы в шампанском!
-Удивительно вкусно, искристо и остро!
-Весь я в чём-то норвежском! Весь я в чём-то испанском!
-Вдохновляюсь порывно <break time='800ms'/> И берусь за перо!
 
-Стрёкот аэропланов! Беги автомобилей!
-Ветропросвист экспрессов! Крылолет буеров!
-Кто-то здесь зацелован! Там кого-то побили!
-Ананасы в шампанском -  это пульс вечеров!
+for voice in speaker.GetVoices():
+    print(voice.GetDescription())
 
-В группе девушек нервных, в остром обществе дамском
-Я трагедию жизни претворю в грезофарс...
-Ананасы в шампанском! Ананасы в шампанском!
-Из Москвы - в Нагасаки! Из Нью-Йорка - на Марс!
-</speak>''')
 
-#speaker.Speak('<speak><phoneme alphabet="x-sampa" ph=\'v"e.de.ni.e\'>ведение</phoneme></speak>')
+path = '"c:\\Program Files\\eSpeak NG\\espeak-ng.exe" -m -v ru -f rhyme.ssml'
+
+result = subprocess.run(path, stdout=subprocess.PIPE)
+print(result.stdout.decode('utf-8'))
+
+#speaker.speak(phrase, 384)
