@@ -1,8 +1,8 @@
-<speak>
-    <voice language="ru">
-    <prosody rate="slow" pitch="-2st">
+<?xml version="1.0"?>
+<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="ru">
+    <prosody rate="slow" volume="soft">
         Игорь Северянин.
-        <emphasis level="moderate">УВЕРТЮРА.</emphasis>
+        УВЕРТЮРА.
 Ананасы в шампанском! Ананасы в шампанском!
 Удивительно вкусно, искристо и остро!
 Весь я в чём-то норвежском! Весь я в чём-то испанском!
@@ -17,6 +17,5 @@
 Я трагедию жизни претворю в грезофарс...
 Ананасы в шампанском! Ананасы в шампанском!
 Из Москвы - в Нагасаки! Из Нью-Йорка - на Марс!
-    </prosody>
-    </voice>
+</prosody>
 </speak>

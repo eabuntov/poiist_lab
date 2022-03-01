@@ -3,6 +3,7 @@
 #espeak, espeak-ng, google, amazon, ms, ...
 import subprocess
 import win32com.client
+import io
 
 speaker = win32com.client.Dispatch("SAPI.SpVoice")
 
@@ -12,7 +13,9 @@ for voice in speaker.GetVoices():
 
 path = '"c:\\Program Files\\eSpeak NG\\espeak-ng.exe" -m -v ru -f rhyme.ssml'
 
-result = subprocess.run(path, stdout=subprocess.PIPE)
-print(result.stdout.decode('utf-8'))
+#result = subprocess.run(path, stdout=subprocess.PIPE)
+#print(result.stdout.decode('utf-8'))
 
-#speaker.speak(phrase, 384)
+file = io.open('rhyme.ssml', mode="r", encoding="utf-8")
+data = file.read()
+speaker.speak(data, 264)
