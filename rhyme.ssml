@@ -1,21 +1,21 @@
 <?xml version="1.0"?>
 <speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="ru">
-    <prosody rate="slow" volume="soft">
+    <prosody rate="slow" volume="loud">
         Игорь Северянин.
-        УВЕРТЮРА.
-Ананасы в шампанском! Ананасы в шампанском!
-Удивительно вкусно, искристо и остро!
-Весь я в чём-то норвежском! Весь я в чём-то испанском!
-Вдохновляюсь порывно! И берусь за перо!
+        <emphasis level="strong">УВЕРТЮРА.</emphasis>
+Ананасы в <emphasis level="strong">шампанском!</emphasis> Ананасы в <emphasis level="strong">шампанском!</emphasis>
+Удивительно вкусно, искристо и <emphasis level="strong">остро!</emphasis>
+Весь я в чём-то <emphasis level="strong">норвежском!</emphasis> Весь я в чём-то <emphasis level="strong">испанском!</emphasis>
+Вдохновляюсь порывно! И берусь за <emphasis level="strong">перо!</emphasis>
 
-Стрёкот аэропланов! Беги автомобилей!
-Ветропросвист экспрессов! Крылолет буеров!
+<emphasis level="strong">Стрёкот</emphasis> аэропланов! <emphasis level="strong">Беги автомобилей!</emphasis>
+<emphasis level="strong">Ветропросвист экспрессов!</emphasis> <emphasis level="strong">Крылолет буеров!</emphasis>
 Кто-то здесь зацелован! Там кого-то побили!
-Ананасы в шампанском -  это пульс вечеров!
+Ананасы в шампанском -  это <emphasis level="strong">пульс вечеров!</emphasis>
 
 В группе девушек нервных, в остром обществе дамском
-Я трагедию жизни претворю в грезофарс...
-Ананасы в шампанском! Ананасы в шампанском!
-Из Москвы - в Нагасаки! Из Нью-Йорка - на Марс!
+Я трагедию жизни претворю в <emphasis level="strong">грезофарс...</emphasis>
+Ананасы в <emphasis level="strong">шампанском!</emphasis> Ананасы в <emphasis level="strong">шампанском!</emphasis>
+Из Москвы - в <emphasis level="strong">Нагасаки! Из Нью-Йорка - <emphasis level="strong">на Марс!</emphasis>
 </prosody>
 </speak>
