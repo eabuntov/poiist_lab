@@ -7,10 +7,6 @@ import io
 
 speaker = win32com.client.Dispatch("SAPI.SpVoice")
 
-for voice in speaker.GetVoices():
-    print(voice.GetDescription())
-
-
 path = '"c:\\Program Files\\eSpeak NG\\espeak-ng.exe" -m -v ru -f rhyme.ssml'
 
 #result = subprocess.run(path, stdout=subprocess.PIPE)
