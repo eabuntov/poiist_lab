@@ -4,6 +4,11 @@ import queue
 import sounddevice as sd
 import vosk
 import sys
+import json
+import query_wikipedia
+import win32com.client
+
+speaker = win32com.client.Dispatch("SAPI.SpVoice")
 
 q = queue.Queue()
 
@@ -44,10 +49,10 @@ parser.add_argument(
 parser.add_argument(
     '-r', '--samplerate', type=int, help='sampling rate')
 args = parser.parse_args(remaining)
-
+total_str = ""
 try:
     if args.model is None:
-        args.model = "model"
+        args.model = "model-small-ru"
     if not os.path.exists(args.model):
         print ("Please download a model for your language from https://alphacephei.com/vosk/models")
         print ("and unpack as 'model' in the current folder.")
@@ -64,24 +69,35 @@ try:
     else:
         dump_fn = None
 
-    with sd.RawInputStream(samplerate=args.samplerate, blocksize = 8000, device=args.device, dtype='int16',
+    with sd.RawInputStream(samplerate=args.samplerate, blocksize = 160000, device=args.device, dtype='int16',
                             channels=1, callback=callback):
             print('#' * 80)
             print('Press Ctrl+C to stop the recording')
             print('#' * 80)
 
             rec = vosk.KaldiRecognizer(model, args.samplerate)
+            last_str = ""
             while True:
                 data = q.get()
                 if rec.AcceptWaveform(data):
-                    print(rec.Result())
+                    this_str = json.loads(rec.Result())['text']
+                    if this_str != last_str:
+                        #print(this_str)
+                        total_str += this_str
                 else:
-                    print(rec.PartialResult())
+                    this_str = json.loads(rec.PartialResult())['partial']
+                    if this_str != last_str:
+                        #print(this_str)
+                        total_str += this_str + ' '
+                last_str = this_str
                 if dump_fn is not None:
                     dump_fn.write(data)
 
 except KeyboardInterrupt:
     print('\nDone')
+    print(total_str)
+    if len(total_str) > 0:
+        speaker.speak(query_wikipedia.get_reply(total_str.split(' ')[0]))
     parser.exit(0)
 except Exception as e:
     parser.exit(type(e).__name__ + ': ' + str(e))
