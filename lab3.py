@@ -49,7 +49,7 @@ parser.add_argument(
 parser.add_argument(
     '-r', '--samplerate', type=int, help='sampling rate')
 args = parser.parse_args(remaining)
-total_str = ""
+
 try:
     if args.model is None:
         args.model = "model-small-ru"
@@ -69,7 +69,7 @@ try:
     else:
         dump_fn = None
 
-    with sd.RawInputStream(samplerate=args.samplerate, blocksize = 160000, device=args.device, dtype='int16',
+    with sd.RawInputStream(samplerate=args.samplerate, blocksize=args.samplerate * 5, device=args.device, dtype='int16',
                             channels=1, callback=callback):
             print('#' * 80)
             print('Press Ctrl+C to stop the recording')
@@ -77,27 +77,22 @@ try:
 
             rec = vosk.KaldiRecognizer(model, args.samplerate)
             last_str = ""
-            while True:
-                data = q.get()
-                if rec.AcceptWaveform(data):
-                    this_str = json.loads(rec.Result())['text']
-                    if this_str != last_str:
-                        #print(this_str)
-                        total_str += this_str
-                else:
-                    this_str = json.loads(rec.PartialResult())['partial']
-                    if this_str != last_str:
-                        #print(this_str)
-                        total_str += this_str + ' '
-                last_str = this_str
-                if dump_fn is not None:
-                    dump_fn.write(data)
+            #while True:
+            data = q.get()
+            if rec.AcceptWaveform(data):
+               this_str = json.loads(rec.Result())['text']
+            else:
+               this_str = json.loads(rec.PartialResult())['partial']
+
+            if dump_fn is not None:
+                dump_fn.write(data)
+
+            print('\nDone')
+            print(this_str)
+            if len(this_str) > 0:
+                speaker.speak(query_wikipedia.get_reply(this_str.split(' ')[0]))
 
 except KeyboardInterrupt:
-    print('\nDone')
-    print(total_str)
-    if len(total_str) > 0:
-        speaker.speak(query_wikipedia.get_reply(total_str.split(' ')[0]))
     parser.exit(0)
 except Exception as e:
     parser.exit(type(e).__name__ + ': ' + str(e))
