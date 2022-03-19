@@ -1,11 +1,14 @@
 import argparse
+import time
+
+import requests
 import os
 import queue
 import sounddevice as sd
 import vosk
 import sys
 import json
-import query_wikipedia
+from bs4 import BeautifulSoup
 import win32com.client
 
 speaker = win32com.client.Dispatch("SAPI.SpVoice")
@@ -38,9 +41,6 @@ parser = argparse.ArgumentParser(
     formatter_class=argparse.RawDescriptionHelpFormatter,
     parents=[parser])
 parser.add_argument(
-    '-f', '--filename', type=str, metavar='FILENAME',
-    help='audio file to store recording to')
-parser.add_argument(
     '-m', '--model', type=str, metavar='MODEL_PATH',
     help='Path to the model')
 parser.add_argument(
@@ -52,7 +52,7 @@ args = parser.parse_args(remaining)
 
 try:
     if args.model is None:
-        args.model = "model-small-ru"
+        args.model = "vosk-model-small-ru-0.22"
     if not os.path.exists(args.model):
         print ("Please download a model for your language from https://alphacephei.com/vosk/models")
         print ("and unpack as 'model' in the current folder.")
@@ -63,53 +63,54 @@ try:
         args.samplerate = int(device_info['default_samplerate'])
 
     model = vosk.Model(args.model)
+    print('#' * 80)
+    print('Press Ctrl+C to stop the recording')
+    print('#' * 80)
 
-    if args.filename:
-        dump_fn = open(args.filename, "wb")
-    else:
-        dump_fn = None
+    rec = vosk.KaldiRecognizer(model, args.samplerate)
 
-    with sd.RawInputStream(samplerate=args.samplerate, blocksize=args.samplerate * 5, device=args.device, dtype='int16',
-                            channels=1, callback=callback):
-            print('#' * 80)
-            print('Press Ctrl+C to stop the recording')
-            print('#' * 80)
-
-            rec = vosk.KaldiRecognizer(model, args.samplerate)
-            last_str = ""
-            #while True:
+    while True:  # Create a little chatbot
+        query_str = ""
+        ans = ""
+        speaker.speak("Привет, хозяин! Что поискать?")
+        #time.sleep(5)
+        with sd.RawInputStream(samplerate=args.samplerate, blocksize=args.samplerate * 3, device=args.device,
+                               dtype='int16',
+                               channels=1, callback=callback):
             data = q.get()
             if rec.AcceptWaveform(data):
-               this_str = json.loads(rec.Result())['text']
+                query_str = json.loads(rec.Result())['text']
             else:
-               this_str = json.loads(rec.PartialResult())['partial']
+                query_str = json.loads(rec.PartialResult())['partial']
 
-            if dump_fn is not None:
-                dump_fn.write(data)
-
-            print('\nDone')
-            print(this_str)
-            if len(this_str) > 0:
-                speaker.speak(query_wikipedia.get_reply(this_str.split(' ')[0]))
-            while True: # Create a little chatbot
-            keyword = input("\n\nGreetings, master. What would you like to search? ")
-            print(f"\n\nSearching for {keyword}...\n\n")    
-            try:        
-                url = f"https://en.wikipedia.org/wiki/{keyword}"
-                page = requests.get(url) 
+        speaker.speak(f"Ищем {query_str}...")
+        if len(query_str) > 0:
+            try:
+                url = f"https://ru.wikipedia.org/wiki/{query_str}"
+                page = requests.get(url)
                 text_info = BeautifulSoup(page.content, 'html.parser').find_all("p")
-                print("This is what I found: \n\n")        
+                speaker.speak("Вот, что я нашла:")
                 for i in text_info:
-                    if (i.text != "\n"):
-                        print(i.text)
+                   if i.text != "\n":
+                        speaker.speak(i.text)
                         break
-                ans = input("\n\nIs this enough? ")
-                if (ans.strip().lower() == "yes"):
-                    print("\n\nI thought so. You're welcome, master.")
+                speaker.speak("Вас устраивает ответ?")
+                #time.sleep(5)
+                with sd.RawInputStream(samplerate=args.samplerate, blocksize=args.samplerate * 3,
+                                       device=args.device, dtype='int16',
+                                       channels=1, callback=callback):
+                    data = q.get()
+                    if rec.AcceptWaveform(data):
+                        ans = json.loads(rec.Result())['text']
+                    else:
+                        ans = json.loads(rec.PartialResult())['partial']
+                if ans.strip().lower() == "да":
+                    speaker.speak("Я так и думала. Не сто'ит благодарности!")
                     break
+                else:
+                    speaker.speak("Простите, хозяин. Я ничего не нашла. Спросите еще раз!")
             except:
-                print("I am sorry, master. I could not find it.")
-
+                break
 except KeyboardInterrupt:
     parser.exit(0)
 except Exception as e:
