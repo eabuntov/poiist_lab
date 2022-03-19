@@ -91,6 +91,24 @@ try:
             print(this_str)
             if len(this_str) > 0:
                 speaker.speak(query_wikipedia.get_reply(this_str.split(' ')[0]))
+            while True: # Create a little chatbot
+            keyword = input("\n\nGreetings, master. What would you like to search? ")
+            print(f"\n\nSearching for {keyword}...\n\n")    
+            try:        
+                url = f"https://en.wikipedia.org/wiki/{keyword}"
+                page = requests.get(url) 
+                text_info = BeautifulSoup(page.content, 'html.parser').find_all("p")
+                print("This is what I found: \n\n")        
+                for i in text_info:
+                    if (i.text != "\n"):
+                        print(i.text)
+                        break
+                ans = input("\n\nIs this enough? ")
+                if (ans.strip().lower() == "yes"):
+                    print("\n\nI thought so. You're welcome, master.")
+                    break
+            except:
+                print("I am sorry, master. I could not find it.")
 
 except KeyboardInterrupt:
     parser.exit(0)
