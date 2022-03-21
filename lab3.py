@@ -1,6 +1,4 @@
 import argparse
-import time
-
 import requests
 import os
 import queue
@@ -9,9 +7,29 @@ import vosk
 import sys
 import json
 from bs4 import BeautifulSoup
+from query_wikipedia import process_p, process_l
 import win32com.client
 
 speaker = win32com.client.Dispatch("SAPI.SpVoice")
+
+def say(str, text_mode, sp = speaker):
+    if text_mode:
+        print(str.replace("\'", ""))
+    else:
+        sp.speak(str)
+
+def listen(text_mode):
+    if text_mode:
+        return input()
+    else:
+        with sd.RawInputStream(samplerate=args.samplerate, blocksize=args.samplerate * 3, device=args.device,
+                               dtype='int16',
+                               channels=1, callback=callback):
+            data = q.get()
+            if rec.AcceptWaveform(data):
+                return json.loads(rec.Result())['text']
+            else:
+                return json.loads(rec.PartialResult())['partial']
 
 q = queue.Queue()
 
@@ -43,6 +61,10 @@ parser = argparse.ArgumentParser(
 parser.add_argument(
     '-m', '--model', type=str, metavar='MODEL_PATH',
     help='Path to the model')
+text_mode = False
+parser.add_argument(
+    '-t', '--text-mode', action='store_true',
+    help='Use text mode without sound')
 parser.add_argument(
     '-d', '--device', type=int_or_str,
     help='input device (numeric ID or substring)')
@@ -53,6 +75,8 @@ args = parser.parse_args(remaining)
 try:
     if args.model is None:
         args.model = "vosk-model-small-ru-0.22"
+    if args.text_mode:
+        text_mode = True
     if not os.path.exists(args.model):
         print ("Please download a model for your language from https://alphacephei.com/vosk/models")
         print ("and unpack as 'model' in the current folder.")
@@ -68,47 +92,34 @@ try:
     print('#' * 80)
 
     rec = vosk.KaldiRecognizer(model, args.samplerate)
-
+    say("Привет, хозяин!", text_mode)
     while True:  # Create a little chatbot
         query_str = ""
         ans = ""
-        speaker.speak("Привет, хозяин! Что поискать?")
-        #time.sleep(5)
-        with sd.RawInputStream(samplerate=args.samplerate, blocksize=args.samplerate * 3, device=args.device,
-                               dtype='int16',
-                               channels=1, callback=callback):
-            data = q.get()
-            if rec.AcceptWaveform(data):
-                query_str = json.loads(rec.Result())['text']
-            else:
-                query_str = json.loads(rec.PartialResult())['partial']
-
-        speaker.speak(f"Ищем {query_str}...")
+        say("Что поискать?", text_mode)
+        query_str = listen(text_mode)
+        say(f"Ищем {query_str}...", text_mode)
         if len(query_str) > 0:
             try:
                 url = f"https://ru.wikipedia.org/wiki/{query_str}"
                 page = requests.get(url)
-                text_info = BeautifulSoup(page.content, 'html.parser').find_all("p")
-                speaker.speak("Вот, что я нашла:")
-                for i in text_info:
-                   if i.text != "\n":
-                        speaker.speak(i.text)
-                        break
-                speaker.speak("Вас устраивает ответ?")
-                #time.sleep(5)
-                with sd.RawInputStream(samplerate=args.samplerate, blocksize=args.samplerate * 3,
-                                       device=args.device, dtype='int16',
-                                       channels=1, callback=callback):
-                    data = q.get()
-                    if rec.AcceptWaveform(data):
-                        ans = json.loads(rec.Result())['text']
-                    else:
-                        ans = json.loads(rec.PartialResult())['partial']
+                say("Вот, что я нашла:", text_mode)
+                if "<p>В Википедии <b>нет статьи</b> с таким названием." in page.text:
+                    say("Точного совпадения не найдено. Возможные варианты:", text_mode)
+                    text_info = BeautifulSoup(page.content, 'html.parser').find_all(class_='mw-search-result-heading')
+                    print(text_info)
+                    say(process_l(text_info), text_mode)
+                else:
+                    text_info = BeautifulSoup(page.content, 'html.parser').find_all("p")
+                    links = BeautifulSoup(page.content, 'html.parser').find_all("li")
+                    say(process_p(text_info, links), text_mode)
+                say("Вас устраивает ответ?", text_mode)
+                ans = listen(text_mode)
                 if ans.strip().lower() == "да":
-                    speaker.speak("Я так и думала. Не сто'ит благодарности!")
+                    say("Я так и думала. Не сто'ит благодарности!", text_mode)
                     break
                 else:
-                    speaker.speak("Простите, хозяин. Я ничего не нашла. Спросите еще раз!")
+                    say("Простите, хозяин. Спросите еще раз!", text_mode)
             except:
                 break
 except KeyboardInterrupt:
