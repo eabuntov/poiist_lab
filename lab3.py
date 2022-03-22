@@ -92,12 +92,15 @@ try:
     print('#' * 80)
 
     rec = vosk.KaldiRecognizer(model, args.samplerate)
-    say("Привет, хозяин!", text_mode)
+    say("Привет!", text_mode)
     while True:  # Create a little chatbot
         query_str = ""
         ans = ""
         say("Что поискать?", text_mode)
         query_str = listen(text_mode)
+        if query_str == "выход":
+            say("Спасибо, до свидания!", text_mode)
+            break
         say(f"Ищем {query_str}...", text_mode)
         if len(query_str) > 0:
             try:
@@ -105,21 +108,21 @@ try:
                 page = requests.get(url)
                 say("Вот, что я нашла:", text_mode)
                 if "<p>В Википедии <b>нет статьи</b> с таким названием." in page.text:
-                    say("Точного совпадения не найдено. Возможные варианты:", text_mode)
-                    text_info = BeautifulSoup(page.content, 'html.parser').find_all(class_='mw-search-result-heading')
-                    print(text_info)
-                    say(process_l(text_info), text_mode)
+                    say("Страница не найдена. Попробуйте переформулировать запрос", text_mode)
+                    #text_info = BeautifulSoup(page.content, 'html.parser').select('ul [class=\'mw-search-results\']')
+                    #print(text_info)
+                    #say(process_l(text_info), text_mode)
                 else:
                     text_info = BeautifulSoup(page.content, 'html.parser').find_all("p")
                     links = BeautifulSoup(page.content, 'html.parser').find_all("li")
-                    say(process_p(text_info, links), text_mode)
-                say("Вас устраивает ответ?", text_mode)
-                ans = listen(text_mode)
-                if ans.strip().lower() == "да":
-                    say("Я так и думала. Не сто'ит благодарности!", text_mode)
-                    break
-                else:
-                    say("Простите, хозяин. Спросите еще раз!", text_mode)
+                    ans = process_p(text_info, links)
+                    for line in ans.splitlines(False):
+                        say(line, text_mode)
+                        say("Вас устраивает ответ?", text_mode)
+                        ans = listen(text_mode)
+                        if ans.strip().lower() == "да":
+                            say("Не сто'ит благодарности! Для завершения скажите \"выход\"", text_mode)
+                            break
             except:
                 break
 except KeyboardInterrupt:
