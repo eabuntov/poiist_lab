@@ -139,7 +139,7 @@ try:
                                     say("Прочитать оригинальную статью?", text_mode)
                                     an = listen(text_mode)
                                     if an.strip().lower() == "да":
-                                        url = f"https://ru.wikipedia.org/wiki/{line.split('/')[1]}"
+                                        url = f"https://ru.wikipedia.org/{line.split('/')[1]+'/'+line.split('/')[2]}"
                                         page = requests.get(url)
                                         text_info = BeautifulSoup(page.content, 'html.parser').find_all("p")
                                         ans = process_p(text_info)
