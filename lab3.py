@@ -9,27 +9,34 @@ import json
 from bs4 import BeautifulSoup
 from query_wikipedia import process_p, process_l
 import win32com.client
+import re
+
+head = """<?xml version="1.0"?>
+<speak  version="1.0" xml:lang="ru">\n"""
+
+tail = "\n</speak>\n"
 
 speaker = win32com.client.Dispatch("SAPI.SpVoice")
 
 def say(str, text_mode, sp = speaker):
+    text = re.sub(r"([1-3][0-9]{3})", "<say-as interpret-as=\"ordinal\">" + r"\1" + r"</say-as>", str)
     if text_mode:
-        print(str.replace("\'", ""))
+        print(head + text + tail)
     else:
-        sp.speak(str)
+        sp.speak(head + text + tail, 264)
 
 def listen(text_mode):
-    if text_mode:
+   # if text_mode:
         return input()
-    else:
-        with sd.RawInputStream(samplerate=args.samplerate, blocksize=args.samplerate * 3, device=args.device,
-                               dtype='int16',
-                               channels=1, callback=callback):
-            data = q.get()
-            if rec.AcceptWaveform(data):
-                return json.loads(rec.Result())['text']
-            else:
-                return json.loads(rec.PartialResult())['partial']
+    #else:
+     #   with sd.RawInputStream(samplerate=args.samplerate, blocksize=args.samplerate * 3, device=args.device,
+      #                         dtype='int16',
+       #                        channels=1, callback=callback):
+        #    data = q.get()
+         #   if rec.AcceptWaveform(data):
+          #      return json.loads(rec.Result())['text']
+           # else:
+            #    return json.loads(rec.PartialResult())['partial']
 
 q = queue.Queue()
 
@@ -109,20 +116,43 @@ try:
                 say("Вот, что я нашла:", text_mode)
                 if "<p>В Википедии <b>нет статьи</b> с таким названием." in page.text:
                     say("Страница не найдена. Попробуйте переформулировать запрос", text_mode)
-                    #text_info = BeautifulSoup(page.content, 'html.parser').select('ul [class=\'mw-search-results\']')
-                    #print(text_info)
-                    #say(process_l(text_info), text_mode)
                 else:
                     text_info = BeautifulSoup(page.content, 'html.parser').find_all("p")
-                    links = BeautifulSoup(page.content, 'html.parser').find_all("li")
-                    ans = process_p(text_info, links)
-                    for line in ans.splitlines(False):
-                        say(line, text_mode)
-                        say("Вас устраивает ответ?", text_mode)
-                        ans = listen(text_mode)
-                        if ans.strip().lower() == "да":
-                            say("Не сто'ит благодарности! Для завершения скажите \"выход\"", text_mode)
-                            break
+                    ans = process_p(text_info)
+                    if ans:
+                        for line in ans.splitlines(False):
+                            say(line, text_mode)
+                            say("Вас устраивает ответ?", text_mode)
+                            ans = listen(text_mode)
+                            if ans.strip().lower() == "да":
+                                say("Не сто'ит благодарности! Для завершения скажите \"выход\"", text_mode)
+                                break
+                    else:
+                        links = BeautifulSoup(page.content, 'html.parser').find_all("li")
+                        ans = process_l(links)
+                        if ans:
+                            for line in ans.splitlines(False):
+                                say(line.split('/')[0], text_mode)
+                                say("Вас устраивает ответ?", text_mode)
+                                an = listen(text_mode)
+                                if an.strip().lower() == "да":
+                                    say("Прочитать оригинальную статью?", text_mode)
+                                    an = listen(text_mode)
+                                    if an.strip().lower() == "да":
+                                        url = f"https://ru.wikipedia.org/wiki/{line.split('/')[1]}"
+                                        page = requests.get(url)
+                                        text_info = BeautifulSoup(page.content, 'html.parser').find_all("p")
+                                        ans = process_p(text_info)
+                                        for line in ans.splitlines(False):
+                                            say(line, text_mode)
+                                            say("Вас устраивает ответ?", text_mode)
+                                            ans = listen(text_mode)
+                                            if ans.strip().lower() == "да":
+                                                say("Не сто'ит благодарности! Для завершения скажите \"выход\"",
+                                                    text_mode)
+                                                break
+                                    say("Для завершения скажите выход", text_mode)
+                                    break
             except:
                 break
 except KeyboardInterrupt:
