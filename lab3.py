@@ -25,18 +25,20 @@ def say(str, text_mode, sp = speaker):
     else:
         sp.speak(head + text + tail, 264)
 
+
 def listen(text_mode):
-   # if text_mode:
+    if text_mode:
         return input()
-    #else:
-     #   with sd.RawInputStream(samplerate=args.samplerate, blocksize=args.samplerate * 3, device=args.device,
-      #                         dtype='int16',
-       #                        channels=1, callback=callback):
-        #    data = q.get()
-         #   if rec.AcceptWaveform(data):
-          #      return json.loads(rec.Result())['text']
-           # else:
-            #    return json.loads(rec.PartialResult())['partial']
+    else:
+        with sd.RawInputStream(samplerate=args.samplerate, blocksize=args.samplerate * 3, device=args.device,
+                              dtype='int16',
+                              channels=1, callback=callback):
+            data = q.get()
+            if rec.AcceptWaveform(data):
+                return json.loads(rec.Result())['text']
+            else:
+                return json.loads(rec.PartialResult())['partial']
+
 
 q = queue.Queue()
 
@@ -108,8 +110,8 @@ try:
         if query_str == "выход":
             say("Спасибо, до свидания!", text_mode)
             break
-        say(f"Ищем {query_str}...", text_mode)
         if len(query_str) > 0:
+            say(f"Ищем {query_str}...", text_mode)
             try:
                 url = f"https://ru.wikipedia.org/wiki/{query_str}"
                 page = requests.get(url)
@@ -155,6 +157,8 @@ try:
                                     break
             except:
                 break
+        else:
+            say("Пожалуйста повторите", text_mode)
 except KeyboardInterrupt:
     parser.exit(0)
 except Exception as e:
