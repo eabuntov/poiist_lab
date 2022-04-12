@@ -12,13 +12,21 @@ hand-written digits, from 0-9.
 # License: BSD 3 clause
 
 # Standard scientific Python imports
+
 import matplotlib
-import matplotlib.pyplot as plt
+import matplotlib.pyplot
 matplotlib.use('TKAgg')
 
 # Import datasets, classifiers and performance metrics
 from sklearn import datasets, svm, metrics
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn.ensemble import BaggingClassifier
+from sklearn.svm import SVC
 from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GridSearchCV
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import MinMaxScaler
 
 from keras.datasets import mnist
 
@@ -42,10 +50,10 @@ print('Y_train: ' + str(train_y.shape))
 print('X_test:  '  + str(test_X.shape))
 print('Y_test:  '  + str(test_y.shape))
 
-for i in range(2):
-    plt.subplot(330 + 1 + i)
-    plt.imshow(train_X[i], cmap=plt.get_cmap('gray'))
-    plt.show()
+#for i in range(2):
+#    matplotlib.pyplot.subplot(330 + 1 + i)
+#    matplotlib.pyplot.imshow(train_X[i], cmap=matplotlib.pyplot.get_cmap('gray'))
+#    matplotlib.pyplot.show()
 
 #digits = datasets.load_digits()
 
@@ -64,13 +72,14 @@ for i in range(2):
 # vector classifier on the train samples. The fitted classifier can
 # subsequently be used to predict the value of the digit for the samples
 # in the test subset.
-limit = 10000
+limit = 60000
 # flatten the images
 n_samples = len(train_X)
 data = train_X.reshape((n_samples, -1))
 label = test_X.reshape((len(test_X), -1))
 # Create a classifier: a support vector classifier
-clf = svm.SVC(gamma=0.001, verbose=True)
+clf = OneVsRestClassifier(BaggingClassifier(SVC(kernel='linear', probability=True), n_jobs=-1,
+                                            max_samples=1.0 / 8, n_estimators=8, verbose=True))
 
 
 # Learn the digits on the train subset
@@ -83,11 +92,11 @@ predicted = clf.predict(label[0:limit])
 # Below we visualize the first 4 test samples and show their predicted
 # digit value in the title.
 
-_, axes = plt.subplots(nrows=1, ncols=8, figsize=(10, 3))
+_, axes = matplotlib.pyplot.subplots(nrows=1, ncols=8, figsize=(10, 3))
 for ax, image, prediction in zip(axes, test_X, predicted):
     ax.set_axis_off()
     image = image.reshape(28, 28)
-    ax.imshow(image, cmap=plt.cm.gray_r, interpolation="nearest")
+    ax.imshow(image, cmap=matplotlib.pyplot.cm.gray_r, interpolation="nearest")
     ax.set_title(f"Prediction: {prediction}")
 
 ###############################################################################
@@ -107,4 +116,4 @@ disp = metrics.ConfusionMatrixDisplay.from_predictions(test_y[0:limit], predicte
 disp.figure_.suptitle("Confusion Matrix")
 print(f"Confusion matrix:\n{disp.confusion_matrix}")
 
-plt.show()
+matplotlib.pyplot.show()
