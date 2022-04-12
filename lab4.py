@@ -72,7 +72,7 @@ print('Y_test:  '  + str(test_y.shape))
 # vector classifier on the train samples. The fitted classifier can
 # subsequently be used to predict the value of the digit for the samples
 # in the test subset.
-limit = 60000
+limit = 10000
 # flatten the images
 n_samples = len(train_X)
 data = train_X.reshape((n_samples, -1))
