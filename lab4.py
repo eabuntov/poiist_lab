@@ -75,7 +75,7 @@ print('Y_test:  ' + str(test_y.shape))
 # vector classifier on the train samples. The fitted classifier can
 # subsequently be used to predict the value of the digit for the samples
 # in the test subset.
-limit = 10000
+limit = 1000
 # flatten the images
 n_samples = len(train_X)
 data = train_X.reshape((n_samples, -1))
@@ -98,8 +98,8 @@ print(grid_search.best_params_)
 accuracy = grid_search.best_score_ *100
 print("Accuracy for our training dataset with tuning is : {:.2f}%".format(accuracy) )
 
-clfKNN = grid_search.best_optimizer_
-
+clfKNN = KNeighborsClassifier(n_neighbors=grid_search.best_params_['n_neighbors'])
+clfKNN.fit(data[0:limit], train_y[0:limit])
 predicted = clfKNN.predict(label[0:limit])
 
 ###############################################################################
