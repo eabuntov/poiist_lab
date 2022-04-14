@@ -15,6 +15,7 @@ hand-written digits, from 0-9.
 
 import matplotlib
 import matplotlib.pyplot
+
 matplotlib.use('TKAgg')
 
 # Import datasets, classifiers and performance metrics
@@ -22,6 +23,8 @@ from sklearn import datasets, svm, metrics
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.ensemble import BaggingClassifier
 from sklearn.svm import SVC
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import GridSearchCV
 from sklearn.neighbors import KNeighborsClassifier
@@ -47,15 +50,15 @@ from keras.datasets import mnist
 (train_X, train_y), (test_X, test_y) = mnist.load_data()
 print('X_train: ' + str(train_X.shape))
 print('Y_train: ' + str(train_y.shape))
-print('X_test:  '  + str(test_X.shape))
-print('Y_test:  '  + str(test_y.shape))
+print('X_test:  ' + str(test_X.shape))
+print('Y_test:  ' + str(test_y.shape))
 
-#for i in range(2):
+# for i in range(2):
 #    matplotlib.pyplot.subplot(330 + 1 + i)
 #    matplotlib.pyplot.imshow(train_X[i], cmap=matplotlib.pyplot.get_cmap('gray'))
 #    matplotlib.pyplot.show()
 
-#digits = datasets.load_digits()
+# digits = datasets.load_digits()
 
 
 ###############################################################################
@@ -78,15 +81,47 @@ n_samples = len(train_X)
 data = train_X.reshape((n_samples, -1))
 label = test_X.reshape((len(test_X), -1))
 # Create a classifier: a support vector classifier
-clf = OneVsRestClassifier(BaggingClassifier(SVC(kernel='linear', probability=True), n_jobs=-1,
-                                            max_samples=1.0 / 8, n_estimators=8, verbose=True))
+
+pipelineSVC = make_pipeline(StandardScaler(), SVC(random_state=1), verbose=True)
+param_grid_svc = [{
+    'svc__C': [0.001, 0.01, 0.05, 0.1, 0.5, 1.0, 10.0],
+    'svc__kernel': ['linear']
+},
+    {
+        'svc__C': [0.001, 0.01, 0.05, 0.1, 0.5, 1.0, 10.0],
+        'svc__gamma': [0.001, 0.01, 0.05, 0.1, 0.5, 1.0, 10.0],
+        'svc__kernel': ['poly']
+    },
+    {
+        'svc__C': [0.001, 0.01, 0.05, 0.1, 0.5, 1.0, 10.0],
+        'svc__gamma': [0.001, 0.01, 0.05, 0.1, 0.5, 1.0, 10.0],
+        'svc__kernel': ['rbf']
+    },
+    {
+        'svc__C': [0.001, 0.01, 0.05, 0.1, 0.5, 1.0, 10.0],
+        'svc__gamma': [0.001, 0.01, 0.05, 0.1, 0.5, 1.0, 10.0],
+        'svc__kernel': ['sigmoid']
+    }
+]
+gsSVC = GridSearchCV(estimator=pipelineSVC,
+                     param_grid=param_grid_svc,
+                     scoring='accuracy',
+                     cv=10,
+                     refit=True,
+                     n_jobs=-1)
+# clf = OneVsRestClassifier(BaggingClassifier(SVC(kernel='linear', probability=True), n_jobs=-1,
+#                                            max_samples=1.0 / 8, n_estimators=8, verbose=True))
 
 
 # Learn the digits on the train subset
-clf.fit(data[0:limit], train_y[0:limit])
+gsSVC.fit(data[0:limit], train_y[0:limit])
 
+print(gsSVC.best_score_)
+print(gsSVC.best_params_)
+
+clfSVC = gsSVC.best_estimator_
 # Predict the value of the digit on the test subset
-predicted = clf.predict(label[0:limit])
+predicted = clfSVC.predict(label[0:limit])
 
 ###############################################################################
 # Below we visualize the first 4 test samples and show their predicted
@@ -104,7 +139,7 @@ for ax, image, prediction in zip(axes, test_X, predicted):
 # the main classification metrics.
 
 print(
-    f"Classification report for classifier {clf}:\n"
+    f"Classification report for classifier {clfSVC}:\n"
     f"{metrics.classification_report(test_y[0:limit], predicted)}\n"
 )
 
