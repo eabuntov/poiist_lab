@@ -7,15 +7,9 @@ import vosk
 import sys
 import json
 from bs4 import BeautifulSoup
-from matplotlib import pyplot as plt
-from matplotlib.animation import FuncAnimation
-import numpy as np
-
 from query_wikipedia import process_p, process_l
 import win32com.client
 import re
-import matplotlib
-matplotlib.use('TKAgg')
 
 head = """<?xml version="1.0"?>
 <speak  version="1.0" xml:lang="ru">\n"""
@@ -32,11 +26,13 @@ def say(str, text_mode, sp = speaker):
         sp.speak(head + text + tail, 264)
 
 
-def listen(text_mode, stream):
+def listen(text_mode):
     if text_mode:
         return input()
     else:
-        with stream:
+        with sd.RawInputStream(samplerate=args.samplerate, blocksize=args.samplerate * 3, device=args.device,
+                              dtype='int16',
+                              channels=1, callback=callback):
             data = q.get()
             if rec.AcceptWaveform(data):
                 return json.loads(rec.Result())['text']
@@ -57,28 +53,7 @@ def callback(indata, frames, time, status):
     """This is called (from a separate thread) for each audio block."""
     if status:
         print(status, file=sys.stderr)
-    # Fancy indexing with mapping creates a (necessary!) copy:
-    q.put(indata)
-
-
-
-def update_plot(frame):
-    """This is called by matplotlib for each plot update.
-    Typically, audio callbacks happen more frequently than plot updates,
-    therefore the queue tends to contain multiple blocks of audio data.
-    """
-    global plotdata
-    while True:
-        try:
-            data = q.get_nowait()
-        except queue.Empty:
-            break
-        shift = len(data)
-        plotdata = np.roll(plotdata, -shift, axis=0)
-        plotdata[-shift:, :] = data
-    for column, line in enumerate(lines):
-        line.set_ydata(plotdata[:, column])
-    return lines
+    q.put(bytes(indata))
 
 parser = argparse.ArgumentParser(add_help=False)
 parser.add_argument(
@@ -126,27 +101,12 @@ try:
     print('#' * 80)
 
     rec = vosk.KaldiRecognizer(model, args.samplerate)
-    plotdata = np.zeros((3*args.samplerate, 1))
-    fig, ax = plt.subplots()
-    lines = ax.plot(plotdata)
-    ax.axis((0, len(plotdata), -1, 1))
-    ax.set_yticks([0])
-    ax.yaxis.grid(True)
-    ax.tick_params(bottom=False, top=False, labelbottom=False, right=False, left=False, labelleft=False)
-    fig.tight_layout(pad=0)
-    stream = sd.InputStream(
-        device=args.device, channels=1,
-        samplerate=args.samplerate, callback=callback)
-    ani = FuncAnimation(fig, update_plot, interval=30, blit=True)
-    with stream:
-        plt.show()
-
     say("Привет!", text_mode)
     while True:  # Create a little chatbot
         query_str = ""
         ans = ""
         say("Что поискать?", text_mode)
-        query_str = listen(text_mode, stream)
+        query_str = listen(text_mode)
         if query_str == "выход":
             say("Спасибо, до свидания!", text_mode)
             break
@@ -165,7 +125,7 @@ try:
                         for line in ans.splitlines(False):
                             say(line, text_mode)
                             say("Вас устраивает ответ?", text_mode)
-                            ans = listen(text_mode, stream)
+                            ans = listen(text_mode)
                             if ans.strip().lower() == "да":
                                 say("Не сто'ит благодарности! Для завершения скажите \"выход\"", text_mode)
                                 break
@@ -176,7 +136,7 @@ try:
                             for line in ans.splitlines(False):
                                 say(line.split('/')[0], text_mode)
                                 say("Вас устраивает ответ?", text_mode)
-                                an = listen(text_mode, stream)
+                                an = listen(text_mode)
                                 if an.strip().lower() == "да":
                                     say("Прочитать оригинальную статью?", text_mode)
                                     an = listen(text_mode)

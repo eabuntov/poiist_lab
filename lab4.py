@@ -82,7 +82,57 @@ data = train_X.reshape((n_samples, -1))
 label = test_X.reshape((len(test_X), -1))
 # Create a classifier: a support vector classifier
 
-pipelineSVC = make_pipeline(StandardScaler(), SVC(random_state=1), verbose=True)
+knn = KNeighborsClassifier()
+
+k_range = list(range(1, 9))
+param_grid = dict(n_neighbors=k_range)
+
+# defining parameter range
+grid = GridSearchCV(knn, param_grid, cv=10, scoring='accuracy', return_train_score=False, verbose=1, n_jobs=-1)
+
+# fitting the model for grid search
+grid_search = grid.fit(data[0:limit], train_y[0:limit])
+
+print(grid_search.best_params_)
+
+accuracy = grid_search.best_score_ *100
+print("Accuracy for our training dataset with tuning is : {:.2f}%".format(accuracy) )
+
+clfKNN = grid_search.best_optimizer_
+
+predicted = clfKNN.predict(label[0:limit])
+
+###############################################################################
+# Below we visualize the first 4 test samples and show their predicted
+# digit value in the title.
+
+_, axes = matplotlib.pyplot.subplots(nrows=1, ncols=8, figsize=(10, 3))
+for ax, image, prediction in zip(axes, test_X, predicted):
+    ax.set_axis_off()
+    image = image.reshape(28, 28)
+    ax.imshow(image, cmap=matplotlib.pyplot.cm.gray_r, interpolation="nearest")
+    ax.set_title(f"Prediction: {prediction}")
+
+###############################################################################
+# :func:`~sklearn.metrics.classification_report` builds a text report showing
+# the main classification metrics.
+
+print(
+    f"Classification report for classifier {clfKNN}:\n"
+    f"{metrics.classification_report(test_y[0:limit], predicted)}\n"
+)
+
+###############################################################################
+# We can also plot a :ref:`confusion matrix <confusion_matrix>` of the
+# true digit values and the predicted digit values.
+
+disp = metrics.ConfusionMatrixDisplay.from_predictions(test_y[0:limit], predicted)
+disp.figure_.suptitle("Confusion Matrix")
+print(f"Confusion matrix:\n{disp.confusion_matrix}")
+
+matplotlib.pyplot.show()
+
+pipelineSVC = make_pipeline(StandardScaler(), SVC(random_state=1))
 param_grid_svc = [{
     'svc__C': [0.001, 0.01, 0.05, 0.1, 0.5, 1.0, 10.0],
     'svc__kernel': ['linear']
