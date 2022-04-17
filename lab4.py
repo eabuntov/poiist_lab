@@ -23,13 +23,11 @@ from sklearn import datasets, svm, metrics
 from sklearn.svm import SVC
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split
 from sklearn.model_selection import GridSearchCV
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import MinMaxScaler
 from skimage import io, segmentation as seg
 from skimage.util import crop
+from skimage.transform import resize
 import numpy as np
 from keras.datasets import mnist
 
@@ -52,14 +50,6 @@ print('X_train: ' + str(train_X.shape))
 print('Y_train: ' + str(train_y.shape))
 print('X_test:  ' + str(test_X.shape))
 print('Y_test:  ' + str(test_y.shape))
-
-# for i in range(2):
-#    matplotlib.pyplot.subplot(330 + 1 + i)
-#    matplotlib.pyplot.imshow(train_X[i], cmap=matplotlib.pyplot.get_cmap('gray'))
-#    matplotlib.pyplot.show()
-
-# digits = datasets.load_digits()
-
 
 ###############################################################################
 # Classification
@@ -95,8 +85,8 @@ grid_search = grid.fit(data[0:limit], train_y[0:limit])
 
 print(grid_search.best_params_)
 
-accuracy = grid_search.best_score_ *100
-print("Accuracy for our training dataset with tuning is : {:.2f}%".format(accuracy) )
+accuracy = grid_search.best_score_ * 100
+print("Accuracy for our training dataset with tuning is : {:.2f}%".format(accuracy))
 
 clfKNN = KNeighborsClassifier(n_neighbors=grid_search.best_params_['n_neighbors'])
 clfKNN.fit(data[0:limit], train_y[0:limit])
@@ -206,14 +196,17 @@ matplotlib.pyplot.show()
 image = io.imread('digits.jpg')
 # plt.imshow(image)
 labels = seg.slic(image, n_segments=11, compactness=10)
-segments = []
+segments = np.ndarray((10, 28, 28))
+i = 0
 for section in np.unique(labels):
     rows, cols = np.where(labels == section)
     print("Image=" + str(section))
     print("Top-Left pixel = {},{}".format(min(rows), min(cols)))
     print("Bottom-Right pixel = {},{}".format(max(rows), max(cols)))
-    segments.append(
-        crop(image, ((min(rows), image.shape[0] - max(rows)), (min(cols), image.shape[1] - max(cols))), copy=True))
+    segments[i] = resize(
+        crop(image, ((min(rows), image.shape[0] - max(rows)), (min(cols), image.shape[1] - max(cols))), copy=True),
+        (28, 28), anti_aliasing=True)
+    i = i + 1
     print("---")
 print(len(segments))
 f, axarr = matplotlib.pyplot.subplots(2, 5)
@@ -221,7 +214,19 @@ for i in range(0, 5):
     for j in range(0, 2):
         index = j * 5 + i
         if index < len(segments):
-            axarr[j, i].imshow(segments[j * 5 + i])
+            axarr[j, i].imshow(segments[j * 5 + i], cmap=matplotlib.pyplot.get_cmap('gray'))
         axarr[j, i].axis('off')
 
 matplotlib.pyplot.show()
+data = segments.reshape((10, -1))
+predicted = clfSVC.predict(data)
+
+###############################################################################
+# Below we visualize the first 4 test samples and show their predicted
+# digit value in the title.
+
+_, axes = matplotlib.pyplot.subplots(nrows=2, ncols=5, figsize=(12, 3))
+for ax, image, prediction in zip(axes, test_X, predicted):
+    image = image.reshape(28, 28)
+    ax.imshow(image, cmap=matplotlib.pyplot.cm.gray_r, interpolation="nearest")
+    ax.set_title(f"Prediction: {prediction}")
