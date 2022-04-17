@@ -20,8 +20,6 @@ matplotlib.use('TKAgg')
 
 # Import datasets, classifiers and performance metrics
 from sklearn import datasets, svm, metrics
-from sklearn.multiclass import OneVsRestClassifier
-from sklearn.ensemble import BaggingClassifier
 from sklearn.svm import SVC
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
@@ -30,7 +28,9 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import MinMaxScaler
-
+from skimage import io, segmentation as seg
+from skimage.util import crop
+import numpy as np
 from keras.datasets import mnist
 
 ###############################################################################
@@ -75,7 +75,7 @@ print('Y_test:  ' + str(test_y.shape))
 # vector classifier on the train samples. The fitted classifier can
 # subsequently be used to predict the value of the digit for the samples
 # in the test subset.
-limit = 1000
+limit = 100
 # flatten the images
 n_samples = len(train_X)
 data = train_X.reshape((n_samples, -1))
@@ -200,5 +200,28 @@ print(
 disp = metrics.ConfusionMatrixDisplay.from_predictions(test_y[0:limit], predicted)
 disp.figure_.suptitle("Confusion Matrix")
 print(f"Confusion matrix:\n{disp.confusion_matrix}")
+
+matplotlib.pyplot.show()
+
+image = io.imread('digits.jpg')
+# plt.imshow(image)
+labels = seg.slic(image, n_segments=11, compactness=10)
+segments = []
+for section in np.unique(labels):
+    rows, cols = np.where(labels == section)
+    print("Image=" + str(section))
+    print("Top-Left pixel = {},{}".format(min(rows), min(cols)))
+    print("Bottom-Right pixel = {},{}".format(max(rows), max(cols)))
+    segments.append(
+        crop(image, ((min(rows), image.shape[0] - max(rows)), (min(cols), image.shape[1] - max(cols))), copy=True))
+    print("---")
+print(len(segments))
+f, axarr = matplotlib.pyplot.subplots(2, 5)
+for i in range(0, 5):
+    for j in range(0, 2):
+        index = j * 5 + i
+        if index < len(segments):
+            axarr[j, i].imshow(segments[j * 5 + i])
+        axarr[j, i].axis('off')
 
 matplotlib.pyplot.show()
