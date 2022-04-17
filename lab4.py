@@ -8,13 +8,9 @@ hand-written digits, from 0-9.
 
 """
 
-# Author: Gael Varoquaux <gael dot varoquaux at normalesup dot org>
-# License: BSD 3 clause
-
-# Standard scientific Python imports
-
 import matplotlib
 import matplotlib.pyplot
+import sklearn
 
 matplotlib.use('TKAgg')
 
@@ -65,7 +61,7 @@ print('Y_test:  ' + str(test_y.shape))
 # vector classifier on the train samples. The fitted classifier can
 # subsequently be used to predict the value of the digit for the samples
 # in the test subset.
-limit = 100
+limit = 1000
 # flatten the images
 n_samples = len(train_X)
 data = train_X.reshape((n_samples, -1))
@@ -96,7 +92,7 @@ predicted = clfKNN.predict(label[0:limit])
 # Below we visualize the first 4 test samples and show their predicted
 # digit value in the title.
 
-_, axes = matplotlib.pyplot.subplots(nrows=1, ncols=8, figsize=(10, 3))
+_, axes = matplotlib.pyplot.subplots(nrows=1, ncols=8, figsize=(12, 3))
 for ax, image, prediction in zip(axes, test_X, predicted):
     ax.set_axis_off()
     image = image.reshape(28, 28)
@@ -167,7 +163,7 @@ predicted = clfSVC.predict(label[0:limit])
 # Below we visualize the first 4 test samples and show their predicted
 # digit value in the title.
 
-_, axes = matplotlib.pyplot.subplots(nrows=1, ncols=8, figsize=(10, 3))
+_, axes = matplotlib.pyplot.subplots(nrows=1, ncols=8, figsize=(12, 3))
 for ax, image, prediction in zip(axes, test_X, predicted):
     ax.set_axis_off()
     image = image.reshape(28, 28)
@@ -215,18 +211,17 @@ for i in range(0, 5):
         index = j * 5 + i
         if index < len(segments):
             axarr[j, i].imshow(segments[j * 5 + i], cmap=matplotlib.pyplot.get_cmap('gray'))
-        axarr[j, i].axis('off')
+        #axarr[j, i].axis('off')
 
 matplotlib.pyplot.show()
-data = segments.reshape((10, -1))
-predicted = clfSVC.predict(data)
-
-###############################################################################
-# Below we visualize the first 4 test samples and show their predicted
-# digit value in the title.
+data = sklearn.preprocessing.binarize(segments.reshape((10, -1)))
+predicted = clfKNN.predict(data)
 
 _, axes = matplotlib.pyplot.subplots(nrows=2, ncols=5, figsize=(12, 3))
-for ax, image, prediction in zip(axes, test_X, predicted):
+for i, image, prediction in zip(range(0, 10), data, predicted):
     image = image.reshape(28, 28)
-    ax.imshow(image, cmap=matplotlib.pyplot.cm.gray_r, interpolation="nearest")
-    ax.set_title(f"Prediction: {prediction}")
+    axes[i % 2, i // 2].imshow(image, cmap=matplotlib.pyplot.get_cmap('gray'), interpolation="nearest")
+    axes[i % 2, i // 2].set_title(f"Prediction: {prediction}")
+    axes[i % 2, i // 2].set_axis_off()
+
+matplotlib.pyplot.show()
