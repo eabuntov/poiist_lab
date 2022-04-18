@@ -8,15 +8,8 @@ hand-written digits, from 0-9.
 
 """
 
-# Author: Gael Varoquaux <gael dot varoquaux at normalesup dot org>
-# License: BSD 3 clause
-
-# Standard scientific Python imports
-
 import matplotlib
 import matplotlib.pyplot
-
-matplotlib.use('TKAgg')
 
 # Import datasets, classifiers and performance metrics
 from sklearn import datasets, svm, metrics
@@ -28,8 +21,24 @@ from sklearn.neighbors import KNeighborsClassifier
 from skimage import io, segmentation as seg
 from skimage.util import crop
 from skimage.transform import resize
+from skimage.filters import threshold_otsu
 import numpy as np
 from keras.datasets import mnist
+import cv2
+
+matplotlib.use('TKAgg')
+
+path = 'digits.jpg'
+img = cv2.imread(path)
+
+img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2GRAY)
+blur = cv2.GaussianBlur(img_gray, (15, 15), 0)
+thresh = threshold_otsu(blur)
+img_otsu = blur < thresh
+
+matplotlib.pyplot.imshow(255 * img_otsu, cmap=matplotlib.pyplot.cm.gray_r)
+matplotlib.pyplot.show()
 
 (train_X, train_y), (test_X, test_y) = mnist.load_data()
 print('X_train: ' + str(train_X.shape))
@@ -51,7 +60,7 @@ print('Y_test:  ' + str(test_y.shape))
 # vector classifier on the train samples. The fitted classifier can
 # subsequently be used to predict the value of the digit for the samples
 # in the test subset.
-limit = 1000
+limit = 10000
 # flatten the images
 n_samples = len(train_X)
 data = train_X.reshape((n_samples, -1))
@@ -60,11 +69,11 @@ label = test_X.reshape((len(test_X), -1))
 
 knn = KNeighborsClassifier()
 
-k_range = list(range(1, 15))
+k_range = list(range(1, 10))
 param_grid = dict(n_neighbors=k_range)
 
 # defining parameter range
-grid = GridSearchCV(knn, param_grid, cv=10, scoring='accuracy', return_train_score=False, n_jobs=-1)
+grid = GridSearchCV(knn, param_grid, cv=2, scoring='accuracy', return_train_score=False, n_jobs=-1)
 
 # fitting the model for grid search
 grid_search = grid.fit(data[0:limit], train_y[0:limit])
@@ -108,14 +117,14 @@ matplotlib.pyplot.show()
 
 pipelineSVC = make_pipeline(StandardScaler(), SVC(random_state=1))
 param_grid_svc = {
-    'svc__C': [0.001, 0.01, 0.05, 0.1, 0.5, 1.0, 10.0],
+    'svc__C': [50.0, 75, 100, 125, 150],
     'svc__kernel': ['linear', 'poly', 'rbf', 'sigmoid']
-    }
+}
 
 gsSVC = GridSearchCV(estimator=pipelineSVC,
                      param_grid=param_grid_svc,
                      scoring='accuracy',
-                     cv=10,
+                     cv=2,
                      refit=True,
                      n_jobs=-1)
 
@@ -179,10 +188,9 @@ for i in range(0, 5):
         index = j * 5 + i
         if index < len(segments):
             axarr[j, i].imshow(segments[j * 5 + i], cmap=matplotlib.pyplot.get_cmap('gray'))
-        axarr[j, i].axis('off')
+        # axarr[j, i].axis('off')
 
 matplotlib.pyplot.savefig('Segmentation_result.jpg', bbox_inches='tight')
-
 
 data = (segments.reshape((10, -1)) < 0.9) * 255
 predicted = clfSVC.predict(data)
