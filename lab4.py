@@ -60,7 +60,7 @@ print('Y_test:  ' + str(test_y.shape))
 # vector classifier on the train samples. The fitted classifier can
 # subsequently be used to predict the value of the digit for the samples
 # in the test subset.
-limit = 10000
+limit = 60000
 # flatten the images
 n_samples = len(train_X)
 data = train_X.reshape((n_samples, -1))
@@ -98,7 +98,7 @@ for ax, image, prediction in zip(axes, test_X, predicted):
     ax.imshow(image, cmap=matplotlib.pyplot.cm.gray_r, interpolation="nearest")
     ax.set_title(f"Prediction: {prediction}")
 
-matplotlib.pyplot.savefig('KNN_result.jpg', bbox_inches='tight')
+matplotlib.pyplot.savefig('KNN_result.png', bbox_inches='tight')
 
 print(
     f"Classification report for classifier {clfKNN}:\n"
@@ -112,7 +112,7 @@ print(
 disp = metrics.ConfusionMatrixDisplay.from_predictions(test_y[0:limit], predicted)
 disp.figure_.suptitle("Confusion Matrix")
 print(f"Confusion matrix:\n{disp.confusion_matrix}")
-matplotlib.pyplot.savefig('KNN_matrix.jpg', bbox_inches='tight')
+matplotlib.pyplot.savefig('KNN_matrix.png', bbox_inches='tight')
 matplotlib.pyplot.show()
 
 pipelineSVC = make_pipeline(StandardScaler(), SVC(random_state=1))
@@ -149,7 +149,7 @@ for ax, image, prediction in zip(axes, test_X, predicted):
     ax.imshow(image, cmap=matplotlib.pyplot.cm.gray_r, interpolation="nearest")
     ax.set_title(f"Prediction: {prediction}")
 
-matplotlib.pyplot.savefig('SVC_result.jpg', bbox_inches='tight')
+matplotlib.pyplot.savefig('SVC_result.png', bbox_inches='tight')
 ###############################################################################
 # :func:`~sklearn.metrics.classification_report` builds a text report showing
 # the main classification metrics.
@@ -166,7 +166,7 @@ print(
 disp = metrics.ConfusionMatrixDisplay.from_predictions(test_y[0:limit], predicted)
 disp.figure_.suptitle("Confusion Matrix")
 print(f"Confusion matrix:\n{disp.confusion_matrix}")
-matplotlib.pyplot.savefig('SVC_matrix.jpg', bbox_inches='tight')
+matplotlib.pyplot.savefig('SVC_matrix.png', bbox_inches='tight')
 matplotlib.pyplot.show()
 
 image = io.imread('digits.jpg')
@@ -190,7 +190,7 @@ for i in range(0, 5):
             axarr[j, i].imshow(segments[j * 5 + i], cmap=matplotlib.pyplot.get_cmap('gray'))
         # axarr[j, i].axis('off')
 
-matplotlib.pyplot.savefig('Segmentation_result.jpg', bbox_inches='tight')
+matplotlib.pyplot.savefig('Segmentation_result.png', bbox_inches='tight')
 
 data = (segments.reshape((10, -1)) < 0.9) * 255
 predicted = clfSVC.predict(data)
@@ -202,5 +202,5 @@ for i, image, prediction in zip(range(0, 10), data, predicted):
     axes[i % 2, i // 2].set_title(f"Prediction: {prediction}")
     axes[i % 2, i // 2].set_axis_off()
 
-matplotlib.pyplot.savefig('Segments_classification.jpg', bbox_inches='tight')
+matplotlib.pyplot.savefig('Segments_classification.png', bbox_inches='tight')
 matplotlib.pyplot.show()
