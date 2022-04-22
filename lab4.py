@@ -18,6 +18,8 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import GridSearchCV
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.pipeline import Pipeline
+from sklearn.decomposition import PCA
 from skimage import io, segmentation as seg
 from skimage.util import crop
 from skimage.transform import resize
@@ -60,7 +62,7 @@ print('Y_test:  ' + str(test_y.shape))
 # vector classifier on the train samples. The fitted classifier can
 # subsequently be used to predict the value of the digit for the samples
 # in the test subset.
-limit = 60000
+limit = 10000
 # flatten the images
 n_samples = len(train_X)
 data = train_X.reshape((n_samples, -1))
@@ -110,11 +112,67 @@ print(
 # true digit values and the predicted digit values.
 
 disp = metrics.ConfusionMatrixDisplay.from_predictions(test_y[0:limit], predicted)
-disp.figure_.suptitle("Confusion Matrix")
+disp.figure_.suptitle("Confusion Matrix KNN")
 print(f"Confusion matrix:\n{disp.confusion_matrix}")
 matplotlib.pyplot.savefig('KNN_matrix.png', bbox_inches='tight')
 matplotlib.pyplot.show()
 
+################################################################################
+# KNN + PCA pipeline + GridSearch
+
+pipe = Pipeline([
+    ('pca', PCA()),
+    ('clf', KNeighborsClassifier()),
+])
+
+parameters = {
+    'pca__n_components': [2, 3, 4, 5, 6, 7],
+    #'clf__C': [1, 10, 100],
+    }
+
+gs = GridSearchCV(pipe, parameters, cv=2, n_jobs=-1, verbose=1)
+gs.fit(data[0:limit], train_y[0:limit])
+
+print("PCA Best score: %0.3f" % gs.best_score_)
+print("Best parameters set:")
+best_parameters = gs.best_estimator_.get_params()
+for param_name in sorted(parameters.keys()):
+    print("\t%s: %r" % (param_name, best_parameters[param_name]))
+clfPCA = gs.best_estimator_
+# Predict the value of the digit on the test subset
+predicted = clfPCA.predict(label[0:limit])
+###############################################################################
+# Below we visualize the first 4 test samples and show their predicted
+# digit value in the title.
+
+_, axes = matplotlib.pyplot.subplots(nrows=1, ncols=8, figsize=(12, 3))
+for ax, image, prediction in zip(axes, test_X, predicted):
+    ax.set_axis_off()
+    image = image.reshape(28, 28)
+    ax.imshow(image, cmap=matplotlib.pyplot.cm.gray_r, interpolation="nearest")
+    ax.set_title(f"Prediction: {prediction}")
+
+matplotlib.pyplot.savefig('PCA_result.png', bbox_inches='tight')
+###############################################################################
+# :func:`~sklearn.metrics.classification_report` builds a text report showing
+# the main classification metrics.
+
+print(
+    f"Classification report for classifier {clfPCA}:\n"
+    f"{metrics.classification_report(test_y[0:limit], predicted)}\n"
+)
+
+###############################################################################
+# We can also plot a :ref:`confusion matrix <confusion_matrix>` of the
+# true digit values and the predicted digit values.
+
+disp = metrics.ConfusionMatrixDisplay.from_predictions(test_y[0:limit], predicted)
+disp.figure_.suptitle("Confusion Matrix KNN+PCA")
+print(f"Confusion matrix:\n{disp.confusion_matrix}")
+matplotlib.pyplot.savefig('PCA_matrix.png', bbox_inches='tight')
+matplotlib.pyplot.show()
+###############################################################################
+# SVC pipeline
 pipelineSVC = make_pipeline(StandardScaler(), SVC(random_state=1))
 param_grid_svc = {
     'svc__C': [50.0, 75, 100, 125, 150],
@@ -164,7 +222,7 @@ print(
 # true digit values and the predicted digit values.
 
 disp = metrics.ConfusionMatrixDisplay.from_predictions(test_y[0:limit], predicted)
-disp.figure_.suptitle("Confusion Matrix")
+disp.figure_.suptitle("Confusion Matrix SVC")
 print(f"Confusion matrix:\n{disp.confusion_matrix}")
 matplotlib.pyplot.savefig('SVC_matrix.png', bbox_inches='tight')
 matplotlib.pyplot.show()
