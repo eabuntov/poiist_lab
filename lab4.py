@@ -26,21 +26,21 @@ from skimage.transform import resize
 from skimage.filters import threshold_otsu
 import numpy as np
 from keras.datasets import mnist
-import cv2
+#import cv2
 
 matplotlib.use('TKAgg')
 
-path = 'digits.jpg'
-img = cv2.imread(path)
+#path = 'digits.jpg'
+#img = cv2.imread(path)
 
-img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2GRAY)
-blur = cv2.GaussianBlur(img_gray, (15, 15), 0)
-thresh = threshold_otsu(blur)
-img_otsu = blur < thresh
+#img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+#img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2GRAY)
+#blur = cv2.GaussianBlur(img_gray, (15, 15), 0)
+#thresh = threshold_otsu(blur)
+#img_otsu = blur < thresh
 
-matplotlib.pyplot.imshow(255 * img_otsu, cmap=matplotlib.pyplot.cm.gray_r)
-matplotlib.pyplot.show()
+#matplotlib.pyplot.imshow(255 * img_otsu, cmap=matplotlib.pyplot.cm.gray_r)
+#matplotlib.pyplot.show()
 
 (train_X, train_y), (test_X, test_y) = mnist.load_data()
 print('X_train: ' + str(train_X.shape))
@@ -115,7 +115,7 @@ disp = metrics.ConfusionMatrixDisplay.from_predictions(test_y[0:limit], predicte
 disp.figure_.suptitle("Confusion Matrix KNN")
 print(f"Confusion matrix:\n{disp.confusion_matrix}")
 matplotlib.pyplot.savefig('KNN_matrix.png', bbox_inches='tight')
-matplotlib.pyplot.show()
+#matplotlib.pyplot.show()
 
 ################################################################################
 # KNN + PCA pipeline + GridSearch
@@ -170,7 +170,7 @@ disp = metrics.ConfusionMatrixDisplay.from_predictions(test_y[0:limit], predicte
 disp.figure_.suptitle("Confusion Matrix KNN+PCA")
 print(f"Confusion matrix:\n{disp.confusion_matrix}")
 matplotlib.pyplot.savefig('PCA_matrix.png', bbox_inches='tight')
-matplotlib.pyplot.show()
+#matplotlib.pyplot.show()
 ###############################################################################
 # SVC pipeline
 pipelineSVC = make_pipeline(StandardScaler(), SVC(random_state=1))
@@ -225,7 +225,7 @@ disp = metrics.ConfusionMatrixDisplay.from_predictions(test_y[0:limit], predicte
 disp.figure_.suptitle("Confusion Matrix SVC")
 print(f"Confusion matrix:\n{disp.confusion_matrix}")
 matplotlib.pyplot.savefig('SVC_matrix.png', bbox_inches='tight')
-matplotlib.pyplot.show()
+#matplotlib.pyplot.show()
 
 image = io.imread('digits.jpg')
 # plt.imshow(image)
@@ -261,4 +261,4 @@ for i, image, prediction in zip(range(0, 10), data, predicted):
     axes[i % 2, i // 2].set_axis_off()
 
 matplotlib.pyplot.savefig('Segments_classification.png', bbox_inches='tight')
-matplotlib.pyplot.show()
+#matplotlib.pyplot.show()
