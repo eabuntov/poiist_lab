@@ -62,7 +62,7 @@ print('Y_test:  ' + str(test_y.shape))
 # vector classifier on the train samples. The fitted classifier can
 # subsequently be used to predict the value of the digit for the samples
 # in the test subset.
-limit = 10000
+limit = 60000
 # flatten the images
 n_samples = len(train_X)
 data = train_X.reshape((n_samples, -1))
@@ -234,31 +234,48 @@ segments = np.ndarray((10, 28, 28))
 i = 0
 for section in np.unique(labels):
     rows, cols = np.where(labels == section)
-    segments[i] = resize(
+    segments[i].fill(1)
+    segments[i][2:26, 2:26] = resize(
         crop(image, ((min(rows), image.shape[0] - max(rows)), (min(cols), image.shape[1] - max(cols))), copy=True),
-        (28, 28), anti_aliasing=True)
+        (24, 24), anti_aliasing=True)
     i = i + 1
 print('Detected {} segments'.format(len(segments)))
 
-f, axarr = matplotlib.pyplot.subplots(2, 5)
-for i in range(0, 5):
-    for j in range(0, 2):
-        index = j * 5 + i
-        if index < len(segments):
-            axarr[j, i].imshow(segments[j * 5 + i], cmap=matplotlib.pyplot.get_cmap('gray'))
-        # axarr[j, i].axis('off')
 
 matplotlib.pyplot.savefig('Segmentation_result.png', bbox_inches='tight')
 
-data = (segments.reshape((10, -1)) < 0.9) * 255
-predicted = clfSVC.predict(data)
+data = (segments.reshape((10, -1)) < 0.95) * 255
+predicted = clfKNN.predict(data)
+
+_, axes = matplotlib.pyplot.subplots(nrows=2, ncols=5, figsize=(12, 3))
+for i, image, prediction in zip(range(0, 10), data, predicted):
+    image = image.reshape(28, 28)
+    axes[i % 2, i // 2].imshow(image, cmap=matplotlib.pyplot.cm.gray_r, interpolation="nearest")
+    axes[i % 2, i // 2].set_title(f"Prediction KNN: {prediction}")
+    #axes[i % 2, i // 2].set_axis_off()
+
+matplotlib.pyplot.savefig('Segments_classification_KNN.png', bbox_inches='tight')
+
+predicted = clfPCA.predict(data)
 
 _, axes = matplotlib.pyplot.subplots(nrows=2, ncols=5, figsize=(12, 3))
 for i, image, prediction in zip(range(0, 10), data, predicted):
     image = image.reshape(28, 28)
     axes[i % 2, i // 2].imshow(image, cmap=matplotlib.pyplot.cm.gray_r, interpolation="nearest")
     axes[i % 2, i // 2].set_title(f"Prediction: {prediction}")
-    axes[i % 2, i // 2].set_axis_off()
+    #axes[i % 2, i // 2].set_axis_off()
 
-matplotlib.pyplot.savefig('Segments_classification.png', bbox_inches='tight')
-#matplotlib.pyplot.show()
+matplotlib.pyplot.savefig('Segments_classification_PCA.png', bbox_inches='tight')
+
+
+predicted = clfSVC.predict(data)
+
+_, axes = matplotlib.pyplot.subplots(nrows=2, ncols=5, figsize=(12, 3))
+for i, image, prediction in zip(range(0, 10), data, predicted):
+    image = image.reshape(28, 28)
+    axes[i % 2, i // 2].imshow(image, cmap=matplotlib.pyplot.cm.gray_r, interpolation="nearest")
+    axes[i % 2, i // 2].set_title(f"Prediction SVC: {prediction}")
+    #axes[i % 2, i // 2].set_axis_off()
+
+matplotlib.pyplot.savefig('Segments_classification_SVC.png', bbox_inches='tight')
+matplotlib.pyplot.show()
