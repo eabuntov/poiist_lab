@@ -24,9 +24,10 @@ from skimage import io, segmentation as seg
 from skimage.util import crop
 from skimage.transform import resize
 from skimage.filters import threshold_otsu
-import numpy as np
+import sklearn.cluster
+import numpy
 from keras.datasets import mnist
-#import cv2
+import cv2
 
 matplotlib.use('TKAgg')
 
@@ -62,7 +63,7 @@ print('Y_test:  ' + str(test_y.shape))
 # vector classifier on the train samples. The fitted classifier can
 # subsequently be used to predict the value of the digit for the samples
 # in the test subset.
-limit = 60000
+limit = 100
 # flatten the images
 n_samples = len(train_X)
 data = train_X.reshape((n_samples, -1))
@@ -182,7 +183,7 @@ param_grid_svc = {
 gsSVC = GridSearchCV(estimator=pipelineSVC,
                      param_grid=param_grid_svc,
                      scoring='accuracy',
-                     cv=2,
+                     cv=5,
                      refit=True,
                      n_jobs=-1)
 
@@ -227,55 +228,164 @@ print(f"Confusion matrix:\n{disp.confusion_matrix}")
 matplotlib.pyplot.savefig('SVC_matrix.png', bbox_inches='tight')
 #matplotlib.pyplot.show()
 
-image = io.imread('digits.jpg')
 # plt.imshow(image)
-labels = seg.slic(image, n_segments=11, compactness=10)
-segments = np.ndarray((10, 28, 28))
-i = 0
-for section in np.unique(labels):
-    rows, cols = np.where(labels == section)
-    segments[i].fill(1)
-    segments[i][2:26, 2:26] = resize(
-        crop(image, ((min(rows), image.shape[0] - max(rows)), (min(cols), image.shape[1] - max(cols))), copy=True),
-        (24, 24), anti_aliasing=True)
-    i = i + 1
-print('Detected {} segments'.format(len(segments)))
 
+### Сегментация изображения на строки с использованием кластеризации
+
+# сценарий использовать командой python имя_программы.py файл_изображения
+# имя файла с исходным изображением
+inp = 'digits.jpg'
+# загрузить изображение в оттенках серого
+src_image = cv2.imread(inp, cv2.IMREAD_GRAYSCALE)
+
+### Подготовка изображения
+
+# инвертировать (при необходимости)
+src_image = numpy.max(src_image) - src_image
+# сгладить (размер ядра подбирается по размеру символов и уровню помех)
+image = cv2.GaussianBlur(src_image, (7, 7), 0)
+# бинаризовать (с использованием метода Оцу)
+level, image = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY or cv2.THRESH_OTSU)
+
+### Выделение фрагментов
+
+# анализ компонентов связности
+# альтернативный способ с использованием функции findContours
+# в режиме RETR_EXTERNAL выделяются только внешние контуры объектов (без вложенных)
+# параметр CHAIN_APPROX_NONE отключает сглаживание контуров
+contours = cv2.findContours(image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+boxes = numpy.array([cv2.boundingRect(c) for c in contours[0]])
+
+### Устранение аномалий
+
+d = boxes[:, 3]  # высоты фрагментов
+m = numpy.median(d)  # средняя высота фрагментов
+e = numpy.abs(d - m)  # отклонения высот от среднего
+me = numpy.median(e)  # среднее отклонение
+
+# критерий отбора - отклонение не более чем n средних
+good = boxes[e <= 3 * me]
+
+### Изображения фрагментов
+fragments = [image[y:y + h, x:x + w] for x, y, w, h in good]
+
+
+# функция формирования образцов для распознавания
+def fit_size(image, rsize=(28, 28), offset=2):
+    # заготовка результата
+    result = numpy.zeros(rsize, dtype=image.dtype)
+    # исходный размер изображения
+    h, w = image.shape
+    if w > h:
+        # вписываем по ширине
+        tw = rsize[0] - offset * 2
+        th = int(tw * h / w)
+        px = offset
+        py = (rsize[1] - th) // 2
+    else:
+        # вписываем по высоте
+        th = rsize[1] - offset * 2
+        tw = int(th * w / h)
+        px = (rsize[0] - tw) // 2
+        py = offset
+
+    # tw, th - итоговый размер с учётом пропорций и рамок
+    # px, py - положение в финальном изображении
+
+    # масштабируем
+    rimage = cv2.resize(image, (tw, th), cv2.INTER_AREA)
+    # помещаем в финальное изображение
+    result[py:py + th, px:px + tw] = rimage
+    return result
+
+
+# образцы для распознавания
+samples = [fit_size(s) for s in fragments]
+
+f, axarr = matplotlib.pyplot.subplots(2, 5)
+for i in range(0, 5):
+    for j in range(0, 2):
+        index = j * 5 + i
+        if index < len(samples):
+            axarr[j, i].imshow(samples[index], cmap=matplotlib.pyplot.get_cmap('gray'))
 
 matplotlib.pyplot.savefig('Segmentation_result.png', bbox_inches='tight')
 
-data = (segments.reshape((10, -1)) < 0.95) * 255
-predicted = clfKNN.predict(data)
+### Формирование строк
 
-_, axes = matplotlib.pyplot.subplots(nrows=2, ncols=5, figsize=(12, 3))
-for i, image, prediction in zip(range(0, 10), data, predicted):
+
+# вертикальные координаты центров фрагментов
+frag_y = good[:, 1] + 0.5 * good[:, 3]
+
+# кластеризация вертикальных координат методом DBSCAN
+# расстояние внутри кластера - на основе высоты символа
+clu = sklearn.cluster.DBSCAN(0.1 * m, min_samples=2)
+# признаки должны быть вектором, даже если признак один
+clu.fit(frag_y.reshape(-1, 1))
+
+# группировка фрагментов в строки на основе кластеризации
+# lines содержит списки номеров фрагментов в каждой строке
+lines = {}
+for i, label in enumerate(clu.labels_):
+    if label in lines:
+        lines[label].append(i)
+    else:
+        lines[label] = [i]
+
+# вычисление положения строк как среднего положений фрагментов
+# line_y содержит пары значений (метка_строки, значение)
+line_y = [(label, numpy.median([frag_y[i] for i in line])) for label, line in lines.items()]
+# сортировка строк по положению
+line_y = sorted(line_y, key=lambda item: item[1])
+ordered_lines = [lines[label] for label, _ in line_y]
+
+# горизонтальные координаты центров фрагментов
+frag_x = good[:, 0] + 0.5 * good[:, 2]
+# сортируем фрагменты в каждой строке по горизонтали
+ordered_lines = [sorted(line, key=lambda idx: frag_x[idx]) for line in ordered_lines]
+
+# финальный массив с образцами для распознавания
+a = []
+for line in ordered_lines:
+    for idx in line:
+        a.append(samples[idx])
+ordered_samples = numpy.asarray(a)
+
+shape = ordered_samples.shape[0]
+data = ordered_samples.reshape((shape, -1))
+predicted = clfKNN.predict(data)
+nrows = len(data)//5 + 1
+_, axes = matplotlib.pyplot.subplots(nrows=nrows, ncols=5, figsize=(12, 3))
+for i, image, prediction in zip(range(len(data)), data, predicted):
     image = image.reshape(28, 28)
-    axes[i % 2, i // 2].imshow(image, cmap=matplotlib.pyplot.cm.gray_r, interpolation="nearest")
-    axes[i % 2, i // 2].set_title(f"Prediction KNN: {prediction}")
-    #axes[i % 2, i // 2].set_axis_off()
+    axes[i % nrows, i // nrows].imshow(image, cmap=matplotlib.pyplot.cm.gray_r, interpolation="nearest")
+    axes[i % nrows, i // nrows].set_title(f"Prediction KNN: {prediction}")
+    axes[i % nrows, i // nrows].set_axis_off()
 
 matplotlib.pyplot.savefig('Segments_classification_KNN.png', bbox_inches='tight')
 
 predicted = clfPCA.predict(data)
 
-_, axes = matplotlib.pyplot.subplots(nrows=2, ncols=5, figsize=(12, 3))
-for i, image, prediction in zip(range(0, 10), data, predicted):
+_, axes = matplotlib.pyplot.subplots(nrows=nrows, ncols=5, figsize=(12, 3))
+for i, image, prediction in zip(range(len(data)), data, predicted):
     image = image.reshape(28, 28)
-    axes[i % 2, i // 2].imshow(image, cmap=matplotlib.pyplot.cm.gray_r, interpolation="nearest")
-    axes[i % 2, i // 2].set_title(f"Prediction: {prediction}")
-    #axes[i % 2, i // 2].set_axis_off()
+    axes[i % nrows, i // nrows].imshow(image, cmap=matplotlib.pyplot.cm.gray_r, interpolation="nearest")
+    axes[i % nrows, i // nrows].set_title(f"Prediction PCA: {prediction}")
+    axes[i % nrows, i // nrows].set_axis_off()
 
 matplotlib.pyplot.savefig('Segments_classification_PCA.png', bbox_inches='tight')
 
 
 predicted = clfSVC.predict(data)
 
-_, axes = matplotlib.pyplot.subplots(nrows=2, ncols=5, figsize=(12, 3))
+_, axes = matplotlib.pyplot.subplots(nrows=nrows, ncols=5, figsize=(12, 3))
 for i, image, prediction in zip(range(0, 10), data, predicted):
     image = image.reshape(28, 28)
-    axes[i % 2, i // 2].imshow(image, cmap=matplotlib.pyplot.cm.gray_r, interpolation="nearest")
-    axes[i % 2, i // 2].set_title(f"Prediction SVC: {prediction}")
-    #axes[i % 2, i // 2].set_axis_off()
+    axes[i % nrows, i // nrows].imshow(image, cmap=matplotlib.pyplot.cm.gray_r, interpolation="nearest")
+    axes[i % nrows, i // nrows].set_title(f"Prediction SVC: {prediction}")
+    axes[i % nrows, i // nrows].set_axis_off()
 
 matplotlib.pyplot.savefig('Segments_classification_SVC.png', bbox_inches='tight')
 matplotlib.pyplot.show()
+
+
