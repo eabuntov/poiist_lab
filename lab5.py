@@ -1,42 +1,42 @@
-from keras.datasets import mnist  # subroutines for fetching the MNIST dataset
-from keras.models import Model  # basic class for specifying and training a neural network
-from keras.layers import Input, Dense  # the two types of neural network layer we will be using
-from keras.utils import np_utils  # utilities for one-hot encoding of ground truth values
+from keras.datasets import mnist  # подпрограммы для получения набора данных MNIST
+from keras.models import Model  # базовый класс для задания и обучения нейронной сети
+from keras.layers import Input, Dense  # два типа слоя нейронной сети
+from keras.utils import np_utils  # утилиты для быстрого кодирования значений истинности
 
-batch_size = 128  # in each iteration, we consider 128 training examples at once
-num_epochs = 20  # we iterate twenty times over the entire training set
-hidden_size = 512  # there will be 512 neurons in both hidden layers
+batch_size = 128  # в каждой итерации рассматриваем сразу 128 обучающих примеров
+num_epochs = 20  # мы двадцать раз перебираем весь тренировочный набор
+hidden_size = 512  # в обоих скрытых слоях будет 512 нейронов
 
-num_train = 60000  # there are 60000 training examples in MNIST
-num_test = 10000  # there are 10000 test examples in MNIST
+num_train = 60000  # в MNIST 60000 обучающих примеров
+num_test = 10000  # в MNIST есть 10000 тестовых примеров
 
-height, width, depth = 28, 28, 1  # MNIST images are 28x28 and greyscale
-num_classes = 10  # there are 10 classes (1 per digit)
+height, width, depth = 28, 28, 1  # Изображения MNIST имеют размер 28x28 и оттенки серого.
+num_classes = 10  # имеется 10 классов (по 1 на цифру)
 
-(X_train, y_train), (X_test, y_test) = mnist.load_data()  # fetch MNIST data
+(X_train, y_train), (X_test, y_test) = mnist.load_data()  # получить данные MNIST
 
-X_train = X_train.reshape(num_train, height * width)  # Flatten data to 1D
-X_test = X_test.reshape(num_test, height * width)  # Flatten data to 1D
+X_train = X_train.reshape(num_train, height * width)  # Свести данные к 1D
+X_test = X_test.reshape(num_test, height * width)  # Свести данные к 1D
 X_train = X_train.astype('float32')
 X_test = X_test.astype('float32')
-X_train /= 255  # Normalise data to [0, 1] range
-X_test /= 255  # Normalise data to [0, 1] range
+X_train /= 255  # Нормализация данных в диапазоне [0, 1]
+X_test /= 255  # Нормализация данных в диапазоне [0, 1]
 
-Y_train = np_utils.to_categorical(y_train, num_classes)  # One-hot encode the labels
-Y_test = np_utils.to_categorical(y_test, num_classes)  # One-hot encode the labels
+Y_train = np_utils.to_categorical(y_train, num_classes)  # Горячее кодирование меток
+Y_test = np_utils.to_categorical(y_test, num_classes)  # Горячее кодирование меток
 
-inp = Input(shape=(height * width,))  # Our input is a 1D vector of size 784
-hidden_1 = Dense(hidden_size, activation='relu')(inp)  # First hidden ReLU layer
-hidden_2 = Dense(hidden_size, activation='relu')(hidden_1)  # Second hidden ReLU layer
-out = Dense(num_classes, activation='softmax')(hidden_2)  # Output softmax layer
+inp = Input(shape=(height * width,))  # Наши входные данные представляют собой одномерный вектор размером 784
+hidden_1 = Dense(hidden_size, activation='relu')(inp)  # Первый скрытый слой ReLU
+hidden_2 = Dense(hidden_size, activation='relu')(hidden_1)  # Второй скрытый слой ReLU
+out = Dense(num_classes, activation='softmax')(hidden_2)  # Выходной слой softmax
 
-model = Model(inputs=inp, outputs=out)  # To define a model, just specify its input and output layers
+model = Model(inputs=inp, outputs=out)  # Чтобы определить модель, просто укажем ее входной и выходной слои.
 
-model.compile(loss='categorical_crossentropy',  # using the cross-entropy loss function
-              optimizer='adam',  # using the Adam optimiser
-              metrics=['accuracy'])  # reporting the accuracy
+model.compile(loss='categorical_crossentropy',  # использование функции потери кросс-энтропии
+              optimizer='adam',  # использование оптимизатора Adam
+              metrics=['accuracy'])  # сообщение о точности
 
-model.fit(X_train, Y_train,  # Train the model using the training set...
+model.fit(X_train, Y_train,  # Обучить модель, используя тренировочный набор...
           batch_size=batch_size, epochs=num_epochs,
-          verbose=1, validation_split=0.1)  # ...holding out 10% of the data for validation
-model.evaluate(X_test, Y_test, verbose=1)  # Evaluate the trained model on the test set!
+          verbose=1, validation_split=0.1)  # удержание 10% данных для проверки
+model.evaluate(X_test, Y_test, verbose=1)  # Оценить обученную модель на тестовом наборе
