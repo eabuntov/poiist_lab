@@ -1,7 +1,14 @@
+import numpy
 from keras.datasets import mnist  # подпрограммы для получения набора данных MNIST
 from keras.models import Model  # базовый класс для задания и обучения нейронной сети
 from keras.layers import Input, Dense  # два типа слоя нейронной сети
 from keras.utils import np_utils  # утилиты для быстрого кодирования значений истинности
+from lab5seg import segments
+
+ordered_samples = numpy.asarray(segments('digits.jpg'))
+shape = ordered_samples[0].shape[0]
+data = ordered_samples[0].reshape((shape, -1))
+data1 = ordered_samples[1].reshape((shape, -1))
 
 batch_size = 128  # в каждой итерации рассматриваем сразу 128 обучающих примеров
 num_epochs = 20  # мы двадцать раз перебираем весь тренировочный набор
@@ -40,3 +47,9 @@ model.fit(X_train, Y_train,  # Обучить модель, используя �
           batch_size=batch_size, epochs=num_epochs,
           verbose=1, validation_split=0.1)  # удержание 10% данных для проверки
 model.evaluate(X_test, Y_test, verbose=1)  # Оценить обученную модель на тестовом наборе
+
+
+predicted = model.predict(data)
+print(predicted)
+predicted1 = model.predict(data1)
+print(predicted1)

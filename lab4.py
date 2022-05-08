@@ -378,6 +378,8 @@ matplotlib.pyplot.savefig('Segments_classification_PCA.png', bbox_inches='tight'
 
 predicted = clfSVC.predict(data)
 
+print(predicted)
+
 _, axes = matplotlib.pyplot.subplots(nrows=nrows, ncols=5, figsize=(12, 3))
 for i, image, prediction in zip(range(0, 10), data, predicted):
     image = image.reshape(28, 28)
