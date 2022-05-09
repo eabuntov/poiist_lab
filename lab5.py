@@ -4,6 +4,19 @@ from keras.models import Model  # базовый класс для задани�
 from keras.layers import Input, Dense  # два типа слоя нейронной сети
 from keras.utils import np_utils  # утилиты для быстрого кодирования значений истинности
 from lab5seg import segments
+import tensorflow as tf
+
+"""gpus = tf.config.experimental.list_physical_devices('GPU')
+if gpus:
+  try:
+    tf.config.experimental.set_virtual_device_configuration(
+        gpus[0],[tf.config.experimental.VirtualDeviceConfiguration(memory_limit=3750)])
+  except RuntimeError as e:
+    print(e)"""
+
+config = tf.compat.v1.ConfigProto()
+config.gpu_options.allow_growth = True
+session = tf.compat.v1.Session(config=config)
 
 ordered_samples = numpy.asarray(segments('digits.jpg'))
 shape = ordered_samples[0].shape[0]
