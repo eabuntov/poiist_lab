@@ -9,13 +9,7 @@ import tensorflow as tf
 from keras.models import load_model
 import os
 
-"""gpus = tf.config.experimental.list_physical_devices('GPU')
-if gpus:
-  try:
-    tf.config.experimental.set_virtual_device_configuration(
-        gpus[0],[tf.config.experimental.VirtualDeviceConfiguration(memory_limit=3750)])
-  except RuntimeError as e:
-    print(e)"""
+matplotlib.use('TKAgg')
 
 config = tf.compat.v1.ConfigProto()
 config.gpu_options.allow_growth = True
@@ -77,7 +71,7 @@ predicted1 = model.predict(data1)
 x[1] = numpy.argmax(predicted1, axis=1)
 nrows = 2
 _, axes = matplotlib.pyplot.subplots(nrows=nrows, ncols=5, figsize=(12, 3))
-for j in range(2):
+for j in range(nrows):
     for i, image, prediction in zip(range(5), ordered_samples[j], x[j]):
         image = image.reshape(28, 28)
         axes[j, i].imshow(image, cmap=matplotlib.pyplot.cm.gray_r, interpolation="nearest")
