@@ -4,7 +4,7 @@ from sklearn.svm import SVC
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 from skimage.exposure import rescale_intensity
-from imutils import build_montages
+from imutils import build_montages, paths
 import numpy as np
 import argparse
 import imutils
@@ -12,6 +12,7 @@ import time
 import cv2
 import os
 
+"""
 # Load the cascade
 face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 # Read the input image
@@ -26,7 +27,7 @@ for (x, y, w, h) in faces:
 # Display the output
 cv2.imshow('img', img)
 cv2.waitKey()
-
+"""
 
 def detect_faces(net, image, minConfidence=0.5):
     # grab the dimensions of the image and then construct a blob
@@ -64,7 +65,7 @@ def load_face_dataset(inputPath, net, minConfidence=0.5,
     # structure, and count the number of example images we have per
     # face
     imagePaths = list(paths.list_images(inputPath))
-    names = [p.split(os.path.sep)[-2] for p in imagePaths]
+    names = [p.split(os.path.sep)[-1] for p in imagePaths]
     (names, counts) = np.unique(names, return_counts=True)
     names = names.tolist()
     # initialize lists to store our extracted faces and associated
@@ -76,7 +77,7 @@ def load_face_dataset(inputPath, net, minConfidence=0.5,
         # load the image from disk and extract the name of the person
         # from the subdirectory structure
         image = cv2.imread(imagePath)
-        name = imagePath.split(os.path.sep)[-2]
+        name = imagePath.split(os.path.sep)[-1]
         # only process images that have a sufficient number of
         # examples belonging to the class
         if counts[names.index(name)] < minSamples:
@@ -108,7 +109,7 @@ ap.add_argument("-f", "--face", type=str,
                 help="path to face detector model directory")
 ap.add_argument("-c", "--confidence", type=float, default=0.5,
                 help="minimum probability to filter weak detections")
-ap.add_argument("-n", "--num-components", type=int, default=150,
+ap.add_argument("-n", "--num-components", type=int, default=50,
                 help="# of principal components")
 ap.add_argument("-v", "--visualize", type=int, default=-1,
                 help="whether or not PCA components should be visualized")
@@ -120,10 +121,12 @@ weightsPath = os.path.sep.join([args["face"],
                                 "res10_300x300_ssd_iter_140000.caffemodel"])
 net = cv2.dnn.readNet(prototxtPath, weightsPath)
 
-# load the CALTECH faces dataset
+# load the faces dataset
 print("[INFO] loading dataset...")
 (faces, labels) = load_face_dataset(args["input"], net,
                                     minConfidence=0.5, minSamples=20)
+
+
 print("[INFO] {} images in dataset".format(len(faces)))
 # flatten all 2D faces into a 1D list of pixel intensities
 pcaFaces = np.array([f.flatten() for f in faces])
