@@ -65,7 +65,7 @@ def load_face_dataset(inputPath, net, minConfidence=0.5,
     # structure, and count the number of example images we have per
     # face
     imagePaths = list(paths.list_images(inputPath))
-    names = [p.split(os.path.sep)[-1] for p in imagePaths]
+    names = [p.split(os.path.sep)[-2] for p in imagePaths]
     (names, counts) = np.unique(names, return_counts=True)
     names = names.tolist()
     # initialize lists to store our extracted faces and associated
@@ -77,13 +77,16 @@ def load_face_dataset(inputPath, net, minConfidence=0.5,
         # load the image from disk and extract the name of the person
         # from the subdirectory structure
         image = cv2.imread(imagePath)
-        name = imagePath.split(os.path.sep)[-1]
+        name = imagePath.split(os.path.sep)[-2]
         # only process images that have a sufficient number of
         # examples belonging to the class
         if counts[names.index(name)] < minSamples:
             continue
         # perform face detection
-        boxes = detect_faces(net, image, minConfidence)
+        try:
+            boxes = detect_faces(net, image, minConfidence)
+        except Exception:
+            continue
         # loop over the bounding boxes
         for (startX, startY, endX, endY) in boxes:
             # extract the face ROI, resize it, and convert it to
@@ -109,7 +112,7 @@ ap.add_argument("-f", "--face", type=str,
                 help="path to face detector model directory")
 ap.add_argument("-c", "--confidence", type=float, default=0.5,
                 help="minimum probability to filter weak detections")
-ap.add_argument("-n", "--num-components", type=int, default=50,
+ap.add_argument("-n", "--num-components", type=int, default=2,
                 help="# of principal components")
 ap.add_argument("-v", "--visualize", type=int, default=-1,
                 help="whether or not PCA components should be visualized")
@@ -124,7 +127,7 @@ net = cv2.dnn.readNet(prototxtPath, weightsPath)
 # load the faces dataset
 print("[INFO] loading dataset...")
 (faces, labels) = load_face_dataset(args["input"], net,
-                                    minConfidence=0.5, minSamples=20)
+                                    minConfidence=0.5, minSamples=14)
 
 
 print("[INFO] {} images in dataset".format(len(faces)))
