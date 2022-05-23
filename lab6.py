@@ -12,22 +12,6 @@ import time
 import cv2
 import os
 
-"""
-# Load the cascade
-face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
-# Read the input image
-img = cv2.imread('test.jpg')
-# Convert into grayscale
-gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-# Detect faces
-faces = face_cascade.detectMultiScale(gray, 1.1, 4)
-# Draw rectangle around the faces
-for (x, y, w, h) in faces:
-    cv2.rectangle(img, (x, y), (x + w, y + h), (255, 0, 0), 2)
-# Display the output
-cv2.imshow('img', img)
-cv2.waitKey()
-"""
 
 def detect_faces(net, image, minConfidence=0.5):
     # grab the dimensions of the image and then construct a blob
@@ -188,7 +172,7 @@ print(classification_report(testY, predictions,
                             target_names=le.classes_))
 
 # generate a sample of testing data
-idxs = np.random.choice(range(0, len(testY)), size=10, replace=False)
+idxs = np.random.choice(range(0, len(testY)), size=5, replace=False)
 # loop over a sample of the testing data
 for i in idxs:
     # grab the predicted name and actual name
@@ -211,4 +195,30 @@ for i in idxs:
     cv2.waitKey(0)
 
 
-# https://pyimagesearch.com/2021/05/10/opencv-eigenfaces-for-face-recognition/
+
+# Load the cascade
+face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
+# Read the input image
+img = cv2.imread('buntov.jpg')
+# Convert into grayscale
+gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+# Detect faces
+face_boxes = face_cascade.detectMultiScale(gray, 1.1, 4)
+faces = []
+# Draw rectangle around the faces
+for (x, y, w, h) in face_boxes:
+    cv2.rectangle(img, (x, y), (x + w, y + h), (255, 0, 0), 2)
+    faces.append(cv2.resize(gray[y:y + h, x:x + w], (47, 62)))
+# Display the output
+
+predictions = model.predict(pca.transform(np.array([f.flatten() for f in faces])))
+i = 0
+for (x, y, w, h) in face_boxes:
+    predName = le.inverse_transform([predictions[i]])[0]
+    i += 1
+    cv2.putText(img, "pred: {}".format(predName), (x, y),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+
+cv2.imshow('img', img)
+#cv2.imshow('face', faces[0])
+cv2.waitKey()
