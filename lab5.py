@@ -27,7 +27,7 @@ if os.path.isfile("MNIST.h5"):
 else:
     batch_size = 128  # в каждой итерации рассматриваем сразу 128 обучающих примеров
     num_epochs = 20  # мы двадцать раз перебираем весь тренировочный набор
-    hidden_size = 512  # в обоих скрытых слоях будет 512 нейронов
+    hidden_size = 256  # в обоих скрытых слоях будет 512 нейронов
 
     num_train = 60000  # в MNIST 60000 обучающих примеров
     num_test = 10000  # в MNIST есть 10000 тестовых примеров
@@ -49,8 +49,8 @@ else:
 
     inp = Input(shape=(height * width,))  # Наши входные данные представляют собой одномерный вектор размером 784
     hidden_1 = Dense(hidden_size, activation='relu')(inp)  # Первый скрытый слой ReLU
-    hidden_2 = Dense(hidden_size, activation='relu')(hidden_1)  # Второй скрытый слой ReLU
-    out = Dense(num_classes, activation='softmax')(hidden_2)  # Выходной слой softmax
+    #hidden_2 = Dense(hidden_size, activation='relu')(hidden_1)  # Второй скрытый слой ReLU
+    out = Dense(num_classes, activation='softmax')(hidden_1)  # Выходной слой softmax
 
     model = Model(inputs=inp, outputs=out)  # Чтобы определить модель, просто укажем ее входной и выходной слои.
 
